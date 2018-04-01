@@ -1,6 +1,6 @@
 # ToMuchInfo
 [NAVER AI Hackathon](https://github.com/naver/ai-hackathon-2018)
-#### Author : 이상헌, 조용래, 박성남
+**Author : 이상헌, 조용래, 박성남**
 
 ---
 ### Abstract
