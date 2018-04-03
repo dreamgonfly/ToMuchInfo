@@ -2,10 +2,14 @@ import os
 import numpy as np
 import random
 from sklearn.model_selection import train_test_split
+import torch
+from torch.utils.data import Dataset
 
 # Random seed
 np.random.seed(0)
 random.seed(0)
+
+PAD_IDX = 0
 
 
 def load_data(dataset_path, val_size=0.3):
@@ -33,22 +37,55 @@ class Preprocessor:
         self.feature_extractors = feature_extractors
         self.dictionary = dictionary
         
-    def preprocess(self, raw_text):
+    def preprocess(self, raw_text, config):
+        """Preprocess raw text
+
+        Args:
+            raw_text (string): For example, "무궁화 꽃이 피었습니다"
+
+        Returns:
+            A tuple that contains an indexed text and extracted features concatenated.
+            For example,
+
+            ([0, 2, 3], (1, 0.7, 0.1))
+        """
         
         tokenized_text = self.tokenizer.tokenize(raw_text)
         
-        features_extracted = list()
+        features_extracted = tuple()
         for feature_extractor in self.feature_extractors:
             
             feature_extracted = feature_extractor.extract_feature(raw_text, tokenized_text)
-            features_extracted.append(feature_extracted)
+            features_extracted += feature_extracted
         
         indexed_text = [self.dictionary.indexer(token) for token in tokenized_text]
         
         return indexed_text, features_extracted
 
 
-def pad_text(text, pad, min_length=None, max_length=None):
+class MovieReviewDataset(Dataset):
+    def __init__(self, data, preprocessor, sort=False, min_length=None, max_length=None):
+
+        global PAD_IDX
+        PAD_IDX = PAD_IDX # dictionary.indexer(dictionary.PAD_TOKEN)
+
+        self.data = [(preprocessor.preprocess(review), label) for review, label in data]
+
+        if min_length or max_length:
+            self.data = [((pad_text(review, PAD_IDX, min_length, max_length), feature), label) for
+                         (review, feature), label in self.data]
+        if sort:
+            self.data = sorted(self.data, key=lambda review_label: len(review_label[0][0]))
+
+    def __getitem__(self, index):
+        (review, feature), label = self.data[index]
+        return (review, feature), label
+
+    def __len__(self):
+        return len(self.data)
+
+
+def pad_text(text, pad=PAD_IDX, min_length=None, max_length=None):
     length = len(text)
     if min_length is not None and length < min_length:
         return text + [pad]*(min_length - length)
@@ -57,111 +94,18 @@ def pad_text(text, pad, min_length=None, max_length=None):
     return text
 
 
-class MovieReviewDataset:
-    
-    def __init__(self, data, preprocessor, dictionary, sort=False, min_length=None, max_length=None):
-        
-        PAD_IDX = dictionary.indexer(dictionary.PAD_TOKEN)
-        
-        self.data = [(preprocessor.preprocess(review), label) for review, label in data]
-        
-        if min_length or max_length:
-            self.data = [((pad_text(review, PAD_IDX, min_length, max_length), feature), label) 
-                    for (review, feature), label in self.data]
-        if sort:
-            self.data = sorted(self.data, key=lambda review_label: len(review_label[0][0]))
-        
-    def __getitem__(self, index):
-        (review, feature), label = self.data[index]
-        return (review, feature), label
-        
-    def __len__(self):
-        return len(self.data)  
-      
+def collate_fn(self, batch):
+    """merges a list of samples to form a mini-batch."""
 
-class MovieReviewDataLoader(object):
-    """Data loader. Combines a dataset and a sampler, and provides an iterator over the dataset."""
+    text_lengths = [len(review) for (review, feature), label in batch]
+    longest_length = max(text_lengths)
 
-    def __init__(self, dataset, dictionary, batch_size=1, shuffle=False, drop_last=False):
-        """Initialize data loader.
-        
-        Args:
-            dataset (Dataset): dataset from which to load the data.
-            batch_size (int, optional): how many samples per batch to load (default: 1).
-            shuffle (bool, optional): set to ``True`` to have the data reshuffled at every epoch (default: False).
-            drop_last (bool, optional): set to ``True`` to drop the last incomplete batch,
-                if the dataset size is not divisible by the batch size. If ``False`` and
-                the size of dataset is not divisible by the batch size, then the last batch
-                will be smaller. (default: False) 
-        """
-        self.dataset = dataset
-        self.dictionary = dictionary
-        self.batch_size = batch_size
-        self.shuffle = shuffle
-        self.drop_last = drop_last
+    reviews_padded = [pad_text(review, pad=PAD_IDX, min_length=longest_length) for (review, feature), label in
+                      batch]
+    features = [feature for (review, feature), label in batch]
+    labels = [label for (review, features), label in batch]
 
-        self.PAD_IDX = dictionary.indexer(dictionary.PAD_TOKEN)
-
-    def __iter__(self):
-        return DataLoaderIter(self)
-
-    def __len__(self):
-        if self.drop_last:
-            return len(self.dataset) // self.batch_size
-        else:
-            return len(self.dataset) // self.batch_size + 1
-
-    def collate_fn(self, batch):
-        """merges a list of samples to form a mini-batch."""
-
-        text_lengths = [len(review) for (review, feature), label in batch]
-        longest_length = max(text_lengths)
-
-        reviews_padded = [pad_text(review, pad=self.PAD_IDX, min_length=longest_length) for (review, feature), label in
-                          batch]
-        features = [sum(feature, tuple()) for (review, feature), label in batch]
-        labels = [label for (review, features), label in batch]
-
-        reviews_array = np.array(reviews_padded)
-        features_array = np.array(features)
-        labels_array = np.array(labels)
-        return reviews_array, features_array, labels_array
-
-
-class DataLoaderIter:
-
-    def __init__(self, loader):
-        self.dataset = loader.dataset
-        self.batch_size = loader.batch_size
-        self.shuffle = loader.shuffle
-        self.drop_last = loader.drop_last
-
-        self.collate_fn = loader.collate_fn
-        
-        data_size = len(self.dataset)
-        if self.shuffle:
-            indexes = list(range(data_size))
-            random.shuffle(indexes)
-            self.indexes = iter(indexes)
-        else:
-            self.indexes = iter(range(data_size))
-
-    def __next__(self):
-        batch_indices = []
-        for _ in range(self.batch_size):
-            try:
-                next_index = next(self.indexes)
-                batch_indices.append(next_index)
-            except StopIteration:
-                if self.drop_last:
-                    raise StopIteration
-                else:
-                    break
-        if len(batch_indices) == 0:
-            raise StopIteration
-        batch = self.collate_fn([self.dataset[i] for i in batch_indices])
-        return batch
-
-
-
-
+    reviews_tensor = torch.LongTensor(reviews_padded)
+    features_tensor = torch.FloatTensor(features)
+    labels_tensor = torch.FloatTensor(labels)
+    return reviews_tensor, features_tensor, labels_tensor

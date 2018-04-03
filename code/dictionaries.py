@@ -6,8 +6,9 @@ import pickle
 class RandomWordDictionary:
     """A dictionary that maps a word to an integer. No embedding word vectors."""
     
-    def __init__(self, config):
-        
+    def __init__(self, tokenizer, config):
+
+        self.tokenizer = tokenizer
         self.max_vocab_size = config.max_vocab_size
         self.min_count = config.min_count
         self.embedding_size = config.embedding_size        
@@ -28,7 +29,7 @@ class RandomWordDictionary:
     
     def _build_vocabulary(self, data):
         
-        counter = Counter([word for document, label in data for word in document])
+        counter = Counter([token for document, label in data for token in self.tokenizer.tokenize(document)])
         if self.max_vocab_size:
             counter = {word:freq for word, freq in counter.most_common(self.max_vocab_size)}
         if self.min_count:
@@ -129,3 +130,12 @@ class FasttextDictionary:
         instance.vocabulary_size = params['vocabulary_size']
         instance.embedding = np.load(embedding_filename)
         return instance
+
+if __name__ == '__main__':
+
+    class Config:
+        max_vocab_size = 10
+        min_count = 1
+
+    dictionary = FasttextDictionary(config=Config)
+    dictionary.build_dictionary([])
