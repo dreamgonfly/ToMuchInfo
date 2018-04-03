@@ -15,7 +15,7 @@ class Trainer():
         self.model = model
         self.train_dataloader = train_dataloader
         self.val_dataloader = val_dataloader
-        self.criterion = criterion(size_average=False)
+        self.criterion = criterion
         self.optimizer = optimizer
         self.lr_schedule = lr_schedule
         self.lr_scheduler = lr_scheduler
@@ -25,18 +25,18 @@ class Trainer():
 
         self.epoch = 0
         self.epoch_losses = []
-        self.epoch_metrics = []
+#         self.epoch_metrics = []
         self.val_epoch_losses = []
-        self.val_epoch_metrics = []
+#         self.val_epoch_metrics = []
         self.use_gpu = use_gpu
         self.logger = logger
 
         self.base_message = ("Epoch: {epoch:<3d} "
                              "Progress: {progress:<.1%} ({elapsed}) "
                              "Train Loss: {train_loss:<.6} "
-                             "Train Acc: {train_metric:<.1%} "
+#                              "Train Acc: {train_metric:<.1%} "
                              "Val Loss: {val_loss:<.6} "
-                             "Val Acc: {val_metric:<.1%} "
+#                              "Val Acc: {val_metric:<.1%} "
                              "Learning rate: {learning_rate:<.4} ")
 
         self.start_time = datetime.now()
@@ -45,7 +45,7 @@ class Trainer():
         self.model.train()
 
         self.batch_losses = []
-        self.batch_metrics = []
+#         self.batch_metrics = []
         for inputs, features, targets in tqdm(self.train_dataloader):
 
             if self.use_gpu:
@@ -56,20 +56,20 @@ class Trainer():
             self.optimizer.zero_grad()
             self.outputs = self.model(self.inputs, self.features)
             batch_loss = self.criterion(self.outputs, self.targets)
-            batch_metric = self.accuracy(self.outputs, self.targets)
+#             batch_metric = self.accuracy(self.outputs, self.targets)
 
             batch_loss.backward()
             self.optimizer.step()
 
             self.batch_losses.append(batch_loss.data)
-            self.batch_metrics.append(batch_metric.data)
+#             self.batch_metrics.append(batch_metric.data)
             if self.epoch == 0:  # for testing
                 break
 
         # validation
         self.model.eval()
         self.val_batch_losses = []
-        self.val_batch_metrics = []
+#         self.val_batch_metrics = []
         for val_inputs, val_features, val_targets in self.val_dataloader:
             if self.use_gpu:
                 self.val_inputs, self.val_features, self.val_targets = Variable(val_inputs.cuda()), Variable(val_features.cuda()), Variable(val_targets.cuda())
@@ -78,39 +78,39 @@ class Trainer():
 
             self.val_outputs = self.model(self.val_inputs, self.val_features)
             val_batch_loss = self.criterion(self.val_outputs, self.val_targets)
-            val_batch_metric = self.accuracy(self.val_outputs, self.val_targets)
+#             val_batch_metric = self.accuracy(self.val_outputs, self.val_targets)
             self.val_batch_losses.append(val_batch_loss.data)
-            self.val_batch_metrics.append(val_batch_metric.data)
+#             self.val_batch_metrics.append(val_batch_metric.data)
 
         train_data_size = len(self.train_dataloader.dataset)
         epoch_loss = torch.cat(self.batch_losses).sum() / train_data_size
-        epoch_metric = torch.cat(self.batch_metrics).sum() / train_data_size
+#         epoch_metric = torch.cat(self.batch_metrics).sum() / train_data_size
 
         val_data_size = len(self.val_dataloader.dataset)
         val_epoch_loss = torch.cat(self.val_batch_losses).sum() / val_data_size
-        val_epoch_metric = torch.cat(self.val_batch_metrics).sum() / val_data_size
+#         val_epoch_metric = torch.cat(self.val_batch_metrics).sum() / val_data_size
 
-        return epoch_loss, epoch_metric, val_epoch_loss, val_epoch_metric
+        return epoch_loss, val_epoch_loss
 
     def run(self, epochs=10):
 
         for epoch in range(self.epoch, epochs + 1):
             self.epoch = epoch
 
-            epoch_loss, epoch_metric, val_epoch_loss, val_epoch_metric = self.train()
+            epoch_loss, val_epoch_loss = self.train()
             if self.lr_schedule:
                 self.lr_scheduler.step(val_epoch_loss)
 
             self.epoch_losses.append(epoch_loss)
-            self.epoch_metrics.append(epoch_metric)
+#             self.epoch_metrics.append(epoch_metric)
             self.val_epoch_losses.append(val_epoch_loss)
-            self.val_epoch_metrics.append(val_epoch_metric)
+#             self.val_epoch_metrics.append(val_epoch_metric)
 
             if epoch % self.print_every == 0:
                 current_lr = self.optimizer.param_groups[0]['lr']
                 message = self.base_message.format(epoch=epoch, progress=epoch / epochs, train_loss=epoch_loss,
-                                                   train_metric=epoch_metric, val_loss=val_epoch_loss,
-                                                   val_metric=val_epoch_metric, learning_rate=current_lr,
+                                                   val_loss=val_epoch_loss,
+                                                   learning_rate=current_lr,
                                                    elapsed=self.elapsed_time())
                 self.logger.info(message)
                 nsml.report(summary=True, scope=locals(), epoch=epoch, epoch_total=epochs,
@@ -123,12 +123,12 @@ class Trainer():
                 # DONOTCHANGE (You can decide how often you want to save the model)
                 nsml.save(epoch)
 
-    def accuracy(self, outputs, labels):
+#     def accuracy(self, outputs, labels):
 
-        maximum, argmax = outputs.max(dim=1)
-        corrects = argmax == labels  # ByteTensor
-        n_corrects = corrects.float().sum()  # FloatTensor
-        return n_corrects
+#         maximum, argmax = outputs.max(dim=1)
+#         corrects = argmax == labels  # ByteTensor
+#         n_corrects = corrects.float().sum()  # FloatTensor
+#         return n_corrects
 
     def elapsed_time(self):
         now = datetime.now()
@@ -146,5 +146,5 @@ class Trainer():
         checkpoint_filepath = join(checkpoint_dir, checkpoint_filename)
         torch.save(self.model.state_dict(), checkpoint_filepath)
         self.last_checkpoint_filepath = checkpoint_filepath
-        if max(self.val_epoch_metrics) == self.val_epoch_metrics[-1]:  # if last run is the best
+        if max(self.val_epoch_losses) == self.val_epoch_losses[-1]:  # if last run is the best
             self.best_checkpoint_filepath = checkpoint_filepath

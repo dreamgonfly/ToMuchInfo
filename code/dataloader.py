@@ -21,7 +21,7 @@ def load_data(dataset_path, val_size=0.3):
         reviews = f.readlines()
     
     with open(data_label) as f:
-        labels = [np.float32(x) for x in f.readlines()]
+        labels = [float(x) for x in f.readlines()]
     
     data = [(review, label) for review, label in zip(reviews, labels)]
     train_data, val_data = train_test_split(data, test_size=val_size)
@@ -37,7 +37,7 @@ class Preprocessor:
         self.feature_extractors = feature_extractors
         self.dictionary = dictionary
         
-    def preprocess(self, raw_text, config):
+    def preprocess(self, raw_text):
         """Preprocess raw text
 
         Args:
@@ -94,7 +94,7 @@ def pad_text(text, pad=PAD_IDX, min_length=None, max_length=None):
     return text
 
 
-def collate_fn(self, batch):
+def collate_fn(batch):
     """merges a list of samples to form a mini-batch."""
 
     text_lengths = [len(review) for (review, feature), label in batch]
