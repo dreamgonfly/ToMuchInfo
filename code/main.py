@@ -44,7 +44,7 @@ def bind_model(model, config):
         """
         # dataset.py에서 작성한 preprocess 함수를 호출하여, 문자열을 벡터로 변환합니다
         # Not yet implemented
-        reviews, features = preprocessor.preprocess(raw_data, config)
+        reviews, features = preprocessor.preprocess(raw_data)
         model.eval()
         # 저장한 모델에 입력값을 넣고 prediction 결과를 리턴받습니다
         output_prediction = model(reviews, features)
@@ -78,7 +78,7 @@ args.add_argument('--save_every', type=int, default=1)
 config = args.parse_args()
 
 logger = utils.get_logger('MovieReview')
-logger.info('Arguments: {}'.format(args))
+logger.info('Arguments: {}'.format(config))
 
 if not HAS_DATASET and not IS_ON_NSML:  # It is not running on nsml
     DATASET_PATH = 'data/movie_review_phase1/'
@@ -112,13 +112,13 @@ if config.mode == 'train':
                                   collate_fn=collate_fn, num_workers=2)
 
     model = WordCNN(dictionary, config)
-    if GPU_NUM:
+    if config.use_gpu:
         model = model.cuda()
 
     # DONOTCHANGE: Reserved for nsml use
     bind_model(model, config)
 
-    criterion = nn.MSELoss()
+    criterion = nn.MSELoss(size_average=False)
     trainable_params = [p for p in model.parameters() if p.requires_grad]
     optimizer = optim.Adam(params=trainable_params, lr=0.01)
 

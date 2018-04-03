@@ -11,11 +11,12 @@ class WordCNN(nn.Module):
         vocabulary_size = dictionary.vocabulary_size
         embedding_size = dictionary.embedding_size
         embedding_weight = dictionary.embedding
-        if embedding_weight is not None:
-            embedding_weight = torch.FloatTensor(embedding_weight)
 
         self.embedding = nn.Embedding(vocabulary_size, embedding_size)
-        self.embedding.weight = nn.Parameter(embedding_weight, requires_grad=False)
+
+        if embedding_weight is not None:
+            embedding_weight = torch.FloatTensor(embedding_weight)
+            self.embedding.weight = nn.Parameter(embedding_weight, requires_grad=False)
 
         convs = [nn.Conv1d(in_channels=embedding_size, out_channels=100, kernel_size=kernel_size) for kernel_size in
                  kernel_sizes]
