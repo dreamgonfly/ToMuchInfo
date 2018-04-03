@@ -2,6 +2,8 @@ code/checkpoints/
 Sandbox.ipynb
 nsml_client.darwin.amd64.hack.tar.gz
 nsml_client.darwin.amd64.hack/
+.idea/
+cli.tar.gz
 
 # Byte-compiled / optimized / DLL files
 __pycache__/
