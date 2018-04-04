@@ -33,9 +33,12 @@ args.add_argument('--use_gpu', type=bool, default=torch.cuda.is_available() or G
 args.add_argument('--output', type=int, default=1)
 args.add_argument('--epochs', type=int, default=10)
 args.add_argument('--batch_size', type=int, default=64)
-args.add_argument('--max_vocab_size', type=int, default=10000)
-args.add_argument('--min_count', type=int, default=3)
-args.add_argument('--sentence_length', type=int, default=20)
+args.add_argument('--max_vocab_size', type=int, default=50000)
+args.add_argument('--min_count', type=int, default=None)
+args.add_argument('--min_length', type=int, default=None)
+args.add_argument('--max_length', type=int, default=300)
+args.add_argument('--sort_dataset', action='store_true')
+args.add_argument('--shuffle_dataset', action='store_true')
 args.add_argument('--embedding_size', type=int, default=100)
 args.add_argument('--learning_rate', type=float, default=0.01)
 args.add_argument('--print_every', type=int, default=1)
@@ -112,10 +115,10 @@ if config.mode == 'train':
     preprocessor = Preprocessor(tokenizer, feature_extractor_list, dictionary)
 
     logger.info("Making dataset & dataloader...")
-    train_dataset = MovieReviewDataset(train_data, preprocessor, sort=False, min_length=config.sentence_length, max_length=config.sentence_length)
-    val_dataset = MovieReviewDataset(val_data, preprocessor, sort=False, min_length=config.sentence_length, max_length=config.sentence_length)
+    train_dataset = MovieReviewDataset(train_data, preprocessor, sort=config.sort_dataset, min_length=config.min_length, max_length=config.max_length)
+    val_dataset = MovieReviewDataset(val_data, preprocessor, sort=config.sort_dataset, min_length=config.min_length, max_length=config.max_length)
 
-    train_dataloader = DataLoader(dataset=train_dataset, batch_size=config.batch_size, shuffle=True, collate_fn=collate_fn,
+    train_dataloader = DataLoader(dataset=train_dataset, batch_size=config.batch_size, shuffle=config.shuffle_dataset, collate_fn=collate_fn,
                               num_workers=2)
     val_dataloader = DataLoader(dataset=val_dataset, batch_size=config.batch_size, shuffle=True,
                                   collate_fn=collate_fn, num_workers=2)
