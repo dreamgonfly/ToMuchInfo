@@ -3,7 +3,7 @@ from collections import Counter
 import io
 import pickle
 
-class RandomWordDictionary:
+class RandomDictionary:
     """A dictionary that maps a word to an integer. No embedding word vectors."""
     
     def __init__(self, tokenizer, config):
