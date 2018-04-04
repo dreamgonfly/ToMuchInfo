@@ -7,9 +7,9 @@ from torch.autograd import Variable
 from torch import nn, optim
 from torch.utils.data import DataLoader
 
-from tokenizers import DummyTokenizer
-from feature_extractors import LengthFeatureExtractor
-from dictionaries import RandomWordDictionary
+import tokenizers
+import feature_extractors
+import dictionaries
 from dataloader import load_data, collate_fn, Preprocessor, MovieReviewDataset
 from trainers import Trainer
 import utils
@@ -19,6 +19,43 @@ from nsml import DATASET_PATH, HAS_DATASET, GPU_NUM, IS_ON_NSML
 
 from models.WordCNN import WordCNN
 
+args = argparse.ArgumentParser()
+# DONOTCHANGE: They are reserved for nsml
+args.add_argument('--mode', type=str, default='train')
+args.add_argument('--pause', type=int, default=0)
+args.add_argument('--iteration', type=str, default='0')
+
+# User options
+args.add_argument('--tokenizer', type=str, default='JamoTokenizer', choices=['JamoTokenizer', 'DummyTokenizer'])
+args.add_argument('--features', type=str, default='LengthFeatureExtractor')
+args.add_argument('--dictionary', type=str, default='RandomDictionary', choices=['RandomDictionary', 'FasttextDictionary'])
+args.add_argument('--use_gpu', type=bool, default=torch.cuda.is_available() or GPU_NUM)
+args.add_argument('--output', type=int, default=1)
+args.add_argument('--epochs', type=int, default=10)
+args.add_argument('--batch_size', type=int, default=64)
+args.add_argument('--max_vocab_size', type=int, default=10000)
+args.add_argument('--min_count', type=int, default=3)
+args.add_argument('--sentence_length', type=int, default=20)
+args.add_argument('--embedding_size', type=int, default=100)
+args.add_argument('--learning_rate', type=float, default=0.01)
+args.add_argument('--print_every', type=int, default=1)
+args.add_argument('--save_every', type=int, default=1)
+config = args.parse_args()
+
+logger = utils.get_logger('MovieReview')
+logger.info('Arguments: {}'.format(config))
+
+Tokenizer = getattr(tokenizers, config.tokenizer)
+tokenizer = Tokenizer(config)
+
+Dictionary = getattr(dictionaries, config.dictionary)
+dictionary = Dictionary(tokenizer, config)
+
+feature_extractor_list = []
+for feature_name in config.features.split():
+    FeatureExtractor = getattr(feature_extractors, feature_name)
+    feature_extractor = FeatureExtractor(config)
+    feature_extractor_list.append(feature_extractor)
 
 # DONOTCHANGE: They are reserved for nsml
 # This is for nsml leaderboard
@@ -57,29 +94,6 @@ def bind_model(model, config):
     # nsml에서 지정한 함수에 접근할 수 있도록 하는 함수입니다.
     nsml.bind(save=save, load=load, infer=infer)
 
-args = argparse.ArgumentParser()
-# DONOTCHANGE: They are reserved for nsml
-args.add_argument('--mode', type=str, default='train')
-args.add_argument('--pause', type=int, default=0)
-args.add_argument('--iteration', type=str, default='0')
-
-# User options
-args.add_argument('--use_gpu', type=bool, default=torch.cuda.is_available() or GPU_NUM)
-args.add_argument('--output', type=int, default=1)
-args.add_argument('--epochs', type=int, default=10)
-args.add_argument('--batch_size', type=int, default=64)
-args.add_argument('--max_vocab_size', type=int, default=10000)
-args.add_argument('--min_count', type=int, default=3)
-args.add_argument('--sentence_length', type=int, default=20)
-args.add_argument('--embedding_size', type=int, default=100)
-args.add_argument('--learning_rate', type=float, default=0.01)
-args.add_argument('--print_every', type=int, default=1)
-args.add_argument('--save_every', type=int, default=1)
-config = args.parse_args()
-
-logger = utils.get_logger('MovieReview')
-logger.info('Arguments: {}'.format(config))
-
 if not HAS_DATASET and not IS_ON_NSML:  # It is not running on nsml
     DATASET_PATH = 'data/movie_review_phase1/'
 
@@ -94,13 +108,8 @@ if config.mode == 'train':
     train_data, val_data = load_data(DATASET_PATH, val_size=0.3)
 
     logger.info("Building preprocessor...")
-    tokenizer = DummyTokenizer(config)
-    feature_extractor1 = LengthFeatureExtractor(config)
-    feature_extractors = [feature_extractor1]
-    dictionary = RandomWordDictionary(tokenizer, config)
     dictionary.build_dictionary(train_data)
-
-    preprocessor = Preprocessor(tokenizer, feature_extractors, dictionary)
+    preprocessor = Preprocessor(tokenizer, feature_extractor_list, dictionary)
 
     logger.info("Making dataset & dataloader...")
     train_dataset = MovieReviewDataset(train_data, preprocessor, sort=False, min_length=config.sentence_length, max_length=config.sentence_length)
