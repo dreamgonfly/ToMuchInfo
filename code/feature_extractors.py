@@ -6,6 +6,9 @@ class LengthFeatureExtractor:
     
     def __init__(self, config):
         pass
+
+    def fit(self, data):
+        pass
     
     def extract_feature(self, raw_text, tokenized_text):
         """Count the number of tokens
@@ -35,7 +38,7 @@ class BasicFeaturesExtractor:
         Returns:
             raise NotImplementedError if not implemented
         """
-        raise NotImplementedError
+        pass
     
     def extract_feature(self, raw_text, tokenized_text):
         """
@@ -59,7 +62,7 @@ class ImportantWordFeaturesExtractor:
         Returns:
             raise NotImplementedError if not implemented
         """
-        raise NotImplementedError
+        pass
     
     def extract_feature(self, raw_text, tokenized_text):
         """

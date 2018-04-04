@@ -18,6 +18,7 @@ import nsml
 from nsml import DATASET_PATH, HAS_DATASET, GPU_NUM, IS_ON_NSML
 
 from models.WordCNN import WordCNN
+from models.VDCNN import VDCNN
 
 args = argparse.ArgumentParser()
 # DONOTCHANGE: They are reserved for nsml
@@ -26,6 +27,7 @@ args.add_argument('--pause', type=int, default=0)
 args.add_argument('--iteration', type=str, default='0')
 
 # User options
+args.add_argument('--model', type=str, default='WordCNN', choices=['WordCNN', 'VDCNN'])
 args.add_argument('--tokenizer', type=str, default='JamoTokenizer', choices=['JamoTokenizer', 'DummyTokenizer'])
 args.add_argument('--features', type=str, default='LengthFeatureExtractor')
 args.add_argument('--dictionary', type=str, default='RandomDictionary', choices=['RandomDictionary', 'FasttextDictionary'])
@@ -47,6 +49,9 @@ config = args.parse_args()
 
 logger = utils.get_logger('MovieReview')
 logger.info('Arguments: {}'.format(config))
+
+if config.model == 'WordCNN': Model = WordCNN
+elif config.model == 'VDCNN': Model = VDCNN
 
 Tokenizer = getattr(tokenizers, config.tokenizer)
 tokenizer = Tokenizer(config)
@@ -111,6 +116,8 @@ if config.mode == 'train':
     train_data, val_data = load_data(DATASET_PATH, val_size=0.1)
 
     logger.info("Building preprocessor...")
+    for feature_extractor in feature_extractor_list:
+        feature_extractor.fit(train_data)
     dictionary.build_dictionary(train_data)
     preprocessor = Preprocessor(tokenizer, feature_extractor_list, dictionary)
 
@@ -123,7 +130,7 @@ if config.mode == 'train':
     val_dataloader = DataLoader(dataset=val_dataset, batch_size=config.batch_size, shuffle=True,
                                   collate_fn=collate_fn, num_workers=2)
 
-    model = WordCNN(dictionary, config)
+    model = Model(dictionary, config)
     if config.use_gpu:
         model = model.cuda()
 
