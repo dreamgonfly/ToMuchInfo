@@ -108,7 +108,7 @@ if config.pause:
 if config.mode == 'train':
     # 데이터를 로드합니다.
     logger.info("Loading data...")
-    train_data, val_data = load_data(DATASET_PATH, val_size=0.3)
+    train_data, val_data = load_data(DATASET_PATH, val_size=0.1)
 
     logger.info("Building preprocessor...")
     dictionary.build_dictionary(train_data)
