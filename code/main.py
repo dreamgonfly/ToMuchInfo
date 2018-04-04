@@ -20,6 +20,10 @@ from nsml import DATASET_PATH, HAS_DATASET, GPU_NUM, IS_ON_NSML
 from models.WordCNN import WordCNN
 from models.VDCNN import VDCNN
 
+# Random seed
+np.random.seed(0)
+torch.manual_seed(0)
+
 args = argparse.ArgumentParser()
 # DONOTCHANGE: They are reserved for nsml
 args.add_argument('--mode', type=str, default='train')
