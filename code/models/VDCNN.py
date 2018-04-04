@@ -128,7 +128,7 @@ class VDCNN(nn.Module):
 
         self.linear_layers = nn.Sequential(*linear_layers)
 
-    def forward(self, sentences):
+    def forward(self, sentences, features):
 
         x = self.embedding(sentences)
         x = x.transpose(1, 2)  # (batch_size, sequence_length, embed_size) -> (batch_size, embed_size, sequence_length)
