@@ -1,8 +1,10 @@
 code/checkpoints/
-code/wordvectors/cc.ko.300.vec.gz
-code/wordvectors/cc.ko.300.vec
+code/wordvectors/
+!code/wordvectors/.gitkeep
 .DS_Store
 */.DS_Store
+intermediate/
+!intermediate/.gitkeep
 
 Sandbox.ipynb
 nsml_client.darwin.amd64.hack.tar.gz
