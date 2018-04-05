@@ -34,19 +34,18 @@ args.add_argument('--iteration', type=str, default='0')
 # User options
 args.add_argument('--model', type=str, default='WordCNN', choices=['WordCNN', 'VDCNN'])
 args.add_argument('--tokenizer', type=str, default='JamoTokenizer', choices=['JamoTokenizer', 'DummyTokenizer'])
-args.add_argument('--features', type=str, default='LengthFeatureExtractor')
+args.add_argument('--features', type=str, default='LengthFeatureExtractor')  # LengthFeatureExtractor_MovieActorFeaturesExtractor ...
 args.add_argument('--dictionary', type=str, default='RandomDictionary', choices=['RandomDictionary', 'FasttextDictionary'])
 args.add_argument('--use_gpu', type=bool, default=torch.cuda.is_available() or GPU_NUM)
 args.add_argument('--output', type=int, default=1)
 args.add_argument('--epochs', type=int, default=10)
 args.add_argument('--batch_size', type=int, default=64)
-args.add_argument('--max_vocab_size', type=int, default=50000)
-args.add_argument('--min_count', type=int, default=None)
+args.add_argument('--vocabulary_size', type=int, default=3000)
+args.add_argument('--embedding_size', type=int, default=100)
 args.add_argument('--min_length', type=int, default=5)
 args.add_argument('--max_length', type=int, default=300)
 args.add_argument('--sort_dataset', action='store_true')
 args.add_argument('--shuffle_dataset', action='store_true')
-args.add_argument('--embedding_size', type=int, default=100)
 args.add_argument('--learning_rate', type=float, default=0.01)
 args.add_argument('--lr_schedule', action='store_true')
 args.add_argument('--print_every', type=int, default=1)
@@ -66,25 +65,22 @@ Dictionary = getattr(dictionaries, config.dictionary)
 dictionary = Dictionary(tokenizer, config)
 
 feature_extractor_list = []
-for feature_name in config.features.split():
+for feature_name in config.features.split('_'):
     FeatureExtractor = getattr(feature_extractors, feature_name)
     feature_extractor = FeatureExtractor(config)
     feature_extractor_list.append((feature_name, feature_extractor))
-    
+
+model = Model(config)
+if config.use_gpu:
+    model = model.cuda()
+
+if not HAS_DATASET and not IS_ON_NSML:  # It is not running on nsml
+    DATASET_PATH = 'data/movie_review_phase1/'
+
 # base_dir = dirname(abspath(__file__))
-preprocess_params_dir = 'preprocess_params' # join(base_dir, 'preprocess_params')
-
-dictionary_params_filename = join(preprocess_params_dir, config.dictionary)
-dictionary.load(dictionary_params_filename + '.pkl', dictionary_params_filename + '-embedding.pkl')
-
-for feature_name, feature_extractor in feature_extractor_list:
-    # Load parameters of feature extractors
-    feature_params_filename = join(preprocess_params_dir, feature_name + '.pkl')
-    feature_extractor.load(feature_params_filename)
-preprocessor = Preprocessor(tokenizer, feature_extractor_list, dictionary)
-
-model = Model(dictionary, config)
-model = model.cuda()
+INTERMEDIATE_DIR = 'intermediate'  # join(base_dir, 'intermediate')
+DICTIONARY_PARAMS_FILENAME= join(INTERMEDIATE_DIR, config.dictionary) + '.pkl'
+DICTIONARY_EMBEDDING_FILENAME= join(INTERMEDIATE_DIR, config.dictionary) + '-embedding.pkl'
 
 # DONOTCHANGE: They are reserved for nsml
 # This is for nsml leaderboard
@@ -109,8 +105,22 @@ def bind_model(model, config):
         :return:
         """
         # dataset.py에서 작성한 preprocess 함수를 호출하여, 문자열을 벡터로 변환합니다
+
+
+        dictionary.load(DICTIONARY_PARAMS_FILENAME, DICTIONARY_EMBEDDING_FILENAME)
+
+        for feature_name, feature_extractor in feature_extractor_list:
+            # Load parameters of feature extractors
+            feature_params_filename = join(INTERMEDIATE_DIR, feature_name + '.pkl')
+            feature_extractor.load(feature_params_filename)
+
+        preprocessor = Preprocessor(tokenizer, feature_extractor_list, dictionary)
+
         reviews, features = preprocessor.preprocess_all(raw_data)
-        reviews, features = Variable(reviews.cuda()), Variable(features.cuda())
+        reviews, features = Variable(reviews), Variable(features)
+        if config.use_gpu:
+            reviews, features = reviews.cuda(), features.cuda()
+
         model.eval()
         # 저장한 모델에 입력값을 넣고 prediction 결과를 리턴받습니다
         output_prediction = model(reviews, features)
@@ -125,9 +135,6 @@ def bind_model(model, config):
 
 # DONOTCHANGE: Reserved for nsml use
 bind_model(model, config)
-    
-if not HAS_DATASET and not IS_ON_NSML:  # It is not running on nsml
-    DATASET_PATH = 'data/movie_review_phase1/'
 
 # DONOTCHANGE: They are reserved for nsml
 if config.pause:
@@ -140,18 +147,17 @@ if config.mode == 'train':
     train_data, val_data = load_data(DATASET_PATH, val_size=0.1)
 
     logger.info("Building preprocessor...")
-    if not exists(preprocess_params_dir):
-        os.mkdir(preprocess_params_dir)
+    if not exists(INTERMEDIATE_DIR):
+        os.mkdir(INTERMEDIATE_DIR)
     
     for feature_name, feature_extractor in feature_extractor_list:
         feature_extractor.fit(train_data)
         # Save parameters of feature extractors
-        feature_params_filename = join(preprocess_params_dir, feature_name + '.pkl')
+        feature_params_filename = join(INTERMEDIATE_DIR, feature_name + '.pkl')
         feature_extractor.save(feature_params_filename)
         
     dictionary.build_dictionary(train_data)
-    dictionary_params_filename = join(preprocess_params_dir, config.dictionary)
-    dictionary.save(dictionary_params_filename + '.pkl', dictionary_params_filename + '-embedding.pkl')
+    dictionary.save(DICTIONARY_PARAMS_FILENAME, DICTIONARY_EMBEDDING_FILENAME)
     preprocessor = Preprocessor(tokenizer, feature_extractor_list, dictionary)
 
     logger.info("Making dataset & dataloader...")
@@ -163,9 +169,9 @@ if config.mode == 'train':
     val_dataloader = DataLoader(dataset=val_dataset, batch_size=config.batch_size, shuffle=True,
                                   collate_fn=collate_fn, num_workers=2)
 
-    model = Model(dictionary, config)
-    if config.use_gpu:
-        model = model.cuda()
+    if dictionary.embedding is not None:
+        embedding_weights = torch.FloatTensor(dictionary.embedding)
+        model.embedding.weight = nn.Parameter(embedding_weights, requires_grad=False)
 
     criterion = nn.MSELoss(size_average=False)
     trainable_params = [p for p in model.parameters() if p.requires_grad]
@@ -182,5 +188,5 @@ if config.mode == 'train':
 elif config.mode == 'test_local':
     with open(os.path.join(DATASET_PATH, 'train/train_data'), 'rt', encoding='utf-8') as f:
         reviews = f.readlines()
-    res = nsml.infer(reviews[:10])
+    res = nsml.infer(reviews)
     print(res)
