@@ -3,20 +3,15 @@ from torch import nn
 
 
 class WordCNN(nn.Module):
-    def __init__(self, dictionary, config):
+    def __init__(self, config):
         super(WordCNN, self).__init__()
 
         kernel_sizes = [3,4,5] # config.kernel_sizes
 
-        vocabulary_size = dictionary.vocabulary_size
-        embedding_size = dictionary.embedding_size
-        embedding_weight = dictionary.embedding
+        vocabulary_size = config.vocabulary_size
+        embedding_size = config.embedding_size
 
         self.embedding = nn.Embedding(vocabulary_size, embedding_size)
-
-        if embedding_weight is not None:
-            embedding_weight = torch.FloatTensor(embedding_weight)
-            self.embedding.weight = nn.Parameter(embedding_weight, requires_grad=False)
 
         convs = [nn.Conv1d(in_channels=embedding_size, out_channels=100, kernel_size=kernel_size) for kernel_size in
                  kernel_sizes]
