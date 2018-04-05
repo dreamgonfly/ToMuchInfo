@@ -47,6 +47,7 @@ args.add_argument('--sort_dataset', action='store_true')
 args.add_argument('--shuffle_dataset', action='store_true')
 args.add_argument('--embedding_size', type=int, default=100)
 args.add_argument('--learning_rate', type=float, default=0.01)
+args.add_argument('--lr_schedule', action='store_true')
 args.add_argument('--print_every', type=int, default=1)
 args.add_argument('--save_every', type=int, default=1)
 config = args.parse_args()
@@ -143,10 +144,11 @@ if config.mode == 'train':
 
     criterion = nn.MSELoss(size_average=False)
     trainable_params = [p for p in model.parameters() if p.requires_grad]
-    optimizer = optim.Adam(params=trainable_params, lr=0.01)
+    optimizer = optim.Adam(params=trainable_params, lr=config.learning_rate)
+    lr_scheduler = optim.lr_scheduler.ReduceLROnPlateau(optimizer, factor=0.7, patience=5, min_lr=0.00005)
 
     trainer = Trainer(model, train_dataloader, val_dataloader, criterion=criterion, optimizer=optimizer,
-                      lr_schedule=False, lr_scheduler=None, use_gpu=config.use_gpu, logger=logger)
+                      lr_schedule=config.lr_schedule, lr_scheduler=lr_scheduler, use_gpu=config.use_gpu, logger=logger)
     trainer.run(epochs=config.epochs)
 
 # 로컬 테스트 모드일때 사용합니다
