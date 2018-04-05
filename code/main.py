@@ -1,5 +1,6 @@
 import argparse
 import os
+from os.path import dirname, abspath, join, exists
 import numpy as np
 
 import torch
@@ -68,7 +69,22 @@ feature_extractor_list = []
 for feature_name in config.features.split():
     FeatureExtractor = getattr(feature_extractors, feature_name)
     feature_extractor = FeatureExtractor(config)
-    feature_extractor_list.append(feature_extractor)
+    feature_extractor_list.append((feature_name, feature_extractor))
+    
+# base_dir = dirname(abspath(__file__))
+preprocess_params_dir = 'preprocess_params' # join(base_dir, 'preprocess_params')
+
+dictionary_params_filename = join(preprocess_params_dir, config.dictionary)
+dictionary.load(dictionary_params_filename + '.pkl', dictionary_params_filename + '-embedding.pkl')
+
+for feature_name, feature_extractor in feature_extractor_list:
+    # Load parameters of feature extractors
+    feature_params_filename = join(preprocess_params_dir, feature_name + '.pkl')
+    feature_extractor.load(feature_params_filename)
+preprocessor = Preprocessor(tokenizer, feature_extractor_list, dictionary)
+
+model = Model(dictionary, config)
+model = model.cuda()
 
 # DONOTCHANGE: They are reserved for nsml
 # This is for nsml leaderboard
@@ -93,12 +109,12 @@ def bind_model(model, config):
         :return:
         """
         # dataset.py에서 작성한 preprocess 함수를 호출하여, 문자열을 벡터로 변환합니다
-        # Not yet implemented
-        reviews, features = preprocessor.preprocess(raw_data)
+        reviews, features = preprocessor.preprocess_all(raw_data)
+        reviews, features = Variable(reviews.cuda()), Variable(features.cuda())
         model.eval()
         # 저장한 모델에 입력값을 넣고 prediction 결과를 리턴받습니다
         output_prediction = model(reviews, features)
-        point = output_prediction.data.squeeze(dim=1).tolist()
+        point = output_prediction.data.tolist()
         # DONOTCHANGE: They are reserved for nsml
         # 리턴 결과는 [(confidence interval, 포인트)] 의 형태로 보내야만 리더보드에 올릴 수 있습니다. 리더보드 결과에 confidence interval의 값은 영향을 미치지 않습니다
         return list(zip(np.zeros(len(point)), point))
@@ -107,6 +123,9 @@ def bind_model(model, config):
     # nsml에서 지정한 함수에 접근할 수 있도록 하는 함수입니다.
     nsml.bind(save=save, load=load, infer=infer)
 
+# DONOTCHANGE: Reserved for nsml use
+bind_model(model, config)
+    
 if not HAS_DATASET and not IS_ON_NSML:  # It is not running on nsml
     DATASET_PATH = 'data/movie_review_phase1/'
 
@@ -121,9 +140,18 @@ if config.mode == 'train':
     train_data, val_data = load_data(DATASET_PATH, val_size=0.1)
 
     logger.info("Building preprocessor...")
-    for feature_extractor in feature_extractor_list:
+    if not exists(preprocess_params_dir):
+        os.mkdir(preprocess_params_dir)
+    
+    for feature_name, feature_extractor in feature_extractor_list:
         feature_extractor.fit(train_data)
+        # Save parameters of feature extractors
+        feature_params_filename = join(preprocess_params_dir, feature_name + '.pkl')
+        feature_extractor.save(feature_params_filename)
+        
     dictionary.build_dictionary(train_data)
+    dictionary_params_filename = join(preprocess_params_dir, config.dictionary)
+    dictionary.save(dictionary_params_filename + '.pkl', dictionary_params_filename + '-embedding.pkl')
     preprocessor = Preprocessor(tokenizer, feature_extractor_list, dictionary)
 
     logger.info("Making dataset & dataloader...")
@@ -139,13 +167,10 @@ if config.mode == 'train':
     if config.use_gpu:
         model = model.cuda()
 
-    # DONOTCHANGE: Reserved for nsml use
-    bind_model(model, config)
-
     criterion = nn.MSELoss(size_average=False)
     trainable_params = [p for p in model.parameters() if p.requires_grad]
     optimizer = optim.Adam(params=trainable_params, lr=config.learning_rate)
-    lr_scheduler = optim.lr_scheduler.ReduceLROnPlateau(optimizer, factor=0.7, patience=5, min_lr=0.00005)
+    lr_scheduler = optim.lr_scheduler.StepLR(optimizer, step_size=2, gamma=0.8)  # .ReduceLROnPlateau(optimizer, factor=0.7, patience=5, min_lr=0.00005)
 
     trainer = Trainer(model, train_dataloader, val_dataloader, criterion=criterion, optimizer=optimizer,
                       lr_schedule=config.lr_schedule, lr_scheduler=lr_scheduler, use_gpu=config.use_gpu, logger=logger)
@@ -157,5 +182,5 @@ if config.mode == 'train':
 elif config.mode == 'test_local':
     with open(os.path.join(DATASET_PATH, 'train/train_data'), 'rt', encoding='utf-8') as f:
         reviews = f.readlines()
-    res = nsml.infer(reviews)
+    res = nsml.infer(reviews[:10])
     print(res)

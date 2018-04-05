@@ -43,6 +43,27 @@ class RandomDictionary:
         idx2word = vocab_words # instead of {idx:word for idx, word in enumerate(vocab_words)}
         
         return vocab_words, word2idx, idx2word
+    
+    def save(self, params_filename, embedding_filename):
+        params = {'vocab_words': self.vocab_words,
+                  'word2idx': self.word2idx,
+                  'idx2word': self.idx2word,
+                  'vocabulary_size': self.vocabulary_size}
+
+        with open(params_filename, 'wb') as params_file:
+            pickle.dump(params, params_file)
+#         np.save(embedding_filename, self.embedding)
+
+    def load(self, params_filename, embedding_filename):
+
+        with open(params_filename, 'rb') as params_file:
+            params = pickle.load(params_file)
+
+        self.vocab_words = params['vocab_words']
+        self.word2idx = params['word2idx']
+        self.idx2word = params['idx2word']
+        self.vocabulary_size = params['vocabulary_size']
+#         self.embedding = np.load(embedding_filename)
 
 
 class FasttextDictionary:
@@ -117,19 +138,17 @@ class FasttextDictionary:
             pickle.dump(params, params_file)
         np.save(embedding_filename, self.embedding)
 
-    @classmethod
-    def load_from(cls, params_filename, embedding_filename):
+    def load(self, params_filename, embedding_filename):
 
         with open(params_filename, 'rb') as params_file:
             params = pickle.load(params_file)
 
-        instance = cls()
-        instance.vocab_words = params['vocab_words']
-        instance.word2idx = params['word2idx']
-        instance.idx2word = params['idx2word']
-        instance.vocabulary_size = params['vocabulary_size']
-        instance.embedding = np.load(embedding_filename)
-        return instance
+        self.vocab_words = params['vocab_words']
+        self.word2idx = params['word2idx']
+        self.idx2word = params['idx2word']
+        self.vocabulary_size = params['vocabulary_size']
+        self.embedding = np.load(embedding_filename)
+
 
 if __name__ == '__main__':
 
@@ -139,3 +158,4 @@ if __name__ == '__main__':
 
     dictionary = FasttextDictionary(config=Config)
     dictionary.build_dictionary([])
+
