@@ -23,6 +23,12 @@ class LengthFeatureExtractor:
         
         counts = len(tokenized_text)
         return counts,  # make it a tuple
+    
+    def save(self, filename):
+        pass
+    
+    def load(self, filename):
+        pass
 
 class BasicFeaturesExtractor:
     """
@@ -47,12 +53,18 @@ class BasicFeaturesExtractor:
             [1] token의 수
         """
         return len(raw_text), len(tokenized_text),
+
+    def save(self, filename):
+        pass
     
+    def load(self, filename):
+        pass
+
 class ImportantWordFeaturesExtractor:
     """
     Extracts negative words, bad words, reverse words, specific words('ㅋ','ㅜ') 
     """
-    def __init__(self):
+    def __init__(self, config):
         self.re_badwords = re.compile("시[0-9]*발")
     
     def fit(self, data):
@@ -91,12 +103,18 @@ class ImportantWordFeaturesExtractor:
         
         return tuple(result)
     
+    def save(self, filename):
+        pass
+    
+    def load(self, filename):
+        pass
+    
 
 class MovieActorFeaturesExtractor:
     """
     Extracts statistics of movie and actor if mentioned
     """
-    def __init__(self):
+    def __init__(self, config):
         re_movie = re.compile("mv[0-9]*")
         re_actor = re.compile("ac[0-9]*")
         self.movies_dict = None
@@ -153,3 +171,20 @@ class MovieActorFeaturesExtractor:
             result[3] = np.mean([x[1] for x in actor_scores])
         
         return tuple(result)
+    
+    def save(self, filename):
+        params = {'movies_dict': self.movies_dict,
+                  'actors_dict': self.actors_dict,
+                  'global_stat': self.global_stat}
+
+        with open(filename, 'wb') as file:
+            pickle.dump(params, file)
+
+    def load(self, filename):
+
+        with open(filename, 'rb') as file:
+            params = pickle.load(file)
+
+        self.movies_dict = params['movies_dict']
+        self.actors_dict = params['actors_dict']
+        self.global_stat = params['global_stat']
