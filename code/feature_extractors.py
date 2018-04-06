@@ -1,5 +1,6 @@
 import re
 from collections import defaultdict, Counter
+import numpy as np
 
 class LengthFeatureExtractor:
     """A dummy feature extractor that counts the number of tokens"""
@@ -23,11 +24,11 @@ class LengthFeatureExtractor:
         
         counts = len(tokenized_text)
         return counts,  # make it a tuple
-    
-    def save(self, filename):
-        pass
-    
-    def load(self, filename):
+
+    def state_dict(self):
+        return None
+
+    def load_state_dict(self, state_dict):
         pass
 
 class BasicFeaturesExtractor:
@@ -54,10 +55,10 @@ class BasicFeaturesExtractor:
         """
         return len(raw_text), len(tokenized_text),
 
-    def save(self, filename):
-        pass
-    
-    def load(self, filename):
+    def state_dict(self):
+        return None
+
+    def load_state_dict(self, state_dict):
         pass
 
 class ImportantWordFeaturesExtractor:
@@ -103,10 +104,10 @@ class ImportantWordFeaturesExtractor:
         
         return tuple(result)
     
-    def save(self, filename):
-        pass
+    def state_dict(self):
+        return None
     
-    def load(self, filename):
+    def load_state_dict(self, state_dict):
         pass
     
 
@@ -115,8 +116,8 @@ class MovieActorFeaturesExtractor:
     Extracts statistics of movie and actor if mentioned
     """
     def __init__(self, config):
-        re_movie = re.compile("mv[0-9]*")
-        re_actor = re.compile("ac[0-9]*")
+        self.re_movie = re.compile("mv[0-9]*")
+        self.re_actor = re.compile("ac[0-9]*")
         self.movies_dict = None
         self.actors_dict = None
         self.global_stat = None
@@ -131,9 +132,9 @@ class MovieActorFeaturesExtractor:
         movies_dict = defaultdict(lambda : list())
         actors_dict = defaultdict(lambda : list())
         for (comment, score) in data:
-            for m_id in re_movie.findall(comment):
+            for m_id in self.re_movie.findall(comment):
                 movies_dict[m_id].append(score)
-            for a_id in re_actor.findall(comment):
+            for a_id in self.re_actor.findall(comment):
                 actors_dict[a_id].append(score)
         movies_dict = {movie:l for movie,l in movies_dict.items() if len(l)>threshold}
         actors_dict = {actor:l for actor,l in actors_dict.items() if len(l)>threshold}
@@ -153,12 +154,12 @@ class MovieActorFeaturesExtractor:
         actors_dict = self.actors_dict
         
         movie_scores = []
-        for m_id in re_movie.findall(raw_text):
+        for m_id in self.re_movie.findall(raw_text):
             if m_id in movies_dict:
                 movie_scores.append((np.mean(movies_dict[m_id]), np.std(movies_dict[m_id])))
         
         actor_scores = []
-        for a_id in re_actor.findall(raw_text):
+        for a_id in self.re_actor.findall(raw_text):
             if a_id in actors_dict:
                 actor_scores.append((np.mean(actors_dict[a_id]), np.std(actors_dict[a_id])))
         result = [self.global_stat[0], self.global_stat[1]]*2
@@ -172,19 +173,15 @@ class MovieActorFeaturesExtractor:
         
         return tuple(result)
     
-    def save(self, filename):
+    def state_dict(self):
         params = {'movies_dict': self.movies_dict,
                   'actors_dict': self.actors_dict,
                   'global_stat': self.global_stat}
 
-        with open(filename, 'wb') as file:
-            pickle.dump(params, file)
+        return params
 
-    def load(self, filename):
+    def load_state_dict(self, state_dict):
 
-        with open(filename, 'rb') as file:
-            params = pickle.load(file)
-
-        self.movies_dict = params['movies_dict']
-        self.actors_dict = params['actors_dict']
-        self.global_stat = params['global_stat']
+        self.movies_dict = state_dict['movies_dict']
+        self.actors_dict = state_dict['actors_dict']
+        self.global_stat = state_dict['global_stat']
