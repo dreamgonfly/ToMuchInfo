@@ -32,7 +32,7 @@ args.add_argument('--iteration', type=str, default='0')
 
 # User options
 args.add_argument('--model', type=str, default='WordCNN', choices=['WordCNN', 'VDCNN'])
-args.add_argument('--tokenizer', type=str, default='JamoTokenizer', choices=['JamoTokenizer', 'DummyTokenizer'])
+args.add_argument('--tokenizer', type=str, default='DummyTokenizer', choices=['DummyTokenizer','TwitterTokenizer'])
 args.add_argument('--features', type=str, default='LengthFeatureExtractor')
 args.add_argument('--dictionary', type=str, default='RandomDictionary', choices=['RandomDictionary', 'FasttextDictionary'])
 args.add_argument('--use_gpu', type=bool, default=torch.cuda.is_available() or GPU_NUM)
