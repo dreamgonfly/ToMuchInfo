@@ -99,7 +99,7 @@ class Trainer():
 
             epoch_loss, val_epoch_loss = self.train()
             if self.lr_schedule:
-                self.lr_scheduler.step(val_epoch_loss)
+                self.lr_scheduler.step()
 
             self.epoch_losses.append(epoch_loss)
 #             self.epoch_metrics.append(epoch_metric)

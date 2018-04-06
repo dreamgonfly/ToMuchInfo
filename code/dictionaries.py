@@ -55,7 +55,8 @@ class RandomDictionary:
 class FasttextDictionary:
     """A dictionary that maps a word to FastText embedding."""
 
-    def __init__(self, config):
+    def __init__(self, tokenizer, config):
+        self.tokenizer = tokenizer
         self.vocabulary_size = config.vocabulary_size
         self.embedding_size = 300
         self.PAD_TOKEN = '<PAD>'
@@ -74,7 +75,7 @@ class FasttextDictionary:
 
     def _build_vocabulary(self, data):
 
-        counter = Counter([word for document, label in data for word in document])
+        counter = Counter([word for document, label in data for word in self.tokenizer.tokenize(document)])
         print("Total number of unique tokens:", len(counter))
         counter = {word: freq for word, freq in counter.most_common(self.vocabulary_size - 2)}  # for pad and unk
 
@@ -88,9 +89,11 @@ class FasttextDictionary:
 
     def load_vectors(self):
         fname = 'wordvectors/cc.ko.300.vec'
+        print("Loading FastText...")
         fin = io.open(fname, 'r', encoding='utf-8', newline='\n', errors='ignore')
+        print("FastText loaded")
         n, d = map(int, fin.readline().split())
-        self.embedding_size = d
+        # self.embedding_size = d
 
         data = {}
         for line in fin:
@@ -98,15 +101,18 @@ class FasttextDictionary:
             data[tokens[0]] = map(float, tokens[1:])
 
         word_vectors = []
+        in_vocab_count, out_vocab_count = 0, 0
         for word in self.vocab_words:
 
             if word in data.keys():
                 vector = data[word]
+                in_vocab_count += 1
             else:
                 vector = np.random.normal(scale=0.2, size=self.embedding_size)  # random vector
+                out_vocab_count += 1
 
             word_vectors.append(vector)
-
+        print("Words in embedding:", in_vocab_count, "out of embedding:", out_vocab_count)
         embedding = np.stack(word_vectors)
         return embedding
 
