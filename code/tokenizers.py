@@ -1,5 +1,7 @@
 from jamo import h2j, j2hcj
 import re
+from konlpy.tag import Twitter
+
 
 class DummyTokenizer:
     """A dummy tokenizer that splits a sentence by space"""
@@ -37,3 +39,28 @@ class JamoTokenizer:
         """
         jamo_text = j2hcj(h2j(raw_text))
         return self.movie_actor.findall(jamo_text)
+
+class TwitterTokenizer:
+    """Noun, Adjective, Verb만 output 내는 tokenizer"""
+
+    def __init__(self, config):
+        self.tw = Twitter()
+        pass
+
+    def tokenize(self, raw_text):
+        """Noun, Verb, Adjective output 내는 tokenizer
+
+        Args:
+            raw_text: A string of raw text. For example : "무궁화 꽃이 피었습니다."
+
+        Returns:
+            A list of tokens. For example:
+
+            ['무궁화', '꽃이', '피었습니다.']
+        """
+        poses = self.tw.pos(raw_text)
+        output = []
+        for word, pos in poses:
+            if(pos == "Noun" or pos == "Verb" or pos == "Adjective"):
+                output.append(word+'_'+pos)
+        return output

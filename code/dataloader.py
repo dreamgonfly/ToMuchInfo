@@ -25,6 +25,12 @@ def load_data(dataset_path, val_size=0.3):
     
     data = [(review, label) for review, label in zip(reviews, labels)]
     train_data, val_data = train_test_split(data, test_size=val_size)
+
+    ## LSTM 을 위한 나머지 버리기. 32는 batch size. batch size를 고침에 따라 이부분도 고쳐야한다.
+    remainder = len(train_data) % 32
+    train_data = train_data[:-remainder]
+    remainder = len(val_data) % 32
+    val_data = val_data[:-remainder]
     
     return train_data, val_data
 
