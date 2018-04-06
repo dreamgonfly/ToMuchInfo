@@ -40,7 +40,7 @@ args.add_argument('--use_gpu', type=bool, default=torch.cuda.is_available() or G
 args.add_argument('--output', type=int, default=1)
 args.add_argument('--epochs', type=int, default=10)
 args.add_argument('--batch_size', type=int, default=64)
-args.add_argument('--vocabulary_size', type=int, default=3000)
+args.add_argument('--vocabulary_size', type=int, default=50000)
 args.add_argument('--embedding_size', type=int, default=100)
 args.add_argument('--min_length', type=int, default=5)
 args.add_argument('--max_length', type=int, default=300)
@@ -70,6 +70,8 @@ for feature_name in config.features.split('_'):
     feature_extractor = FeatureExtractor(config)
     feature_extractor_list.append((feature_name, feature_extractor))
 
+preprocessor = Preprocessor(tokenizer, feature_extractor_list, dictionary)
+
 model = Model(config)
 if config.use_gpu:
     model = model.cuda()
@@ -77,18 +79,14 @@ if config.use_gpu:
 if not HAS_DATASET and not IS_ON_NSML:  # It is not running on nsml
     DATASET_PATH = 'data/movie_review_phase1/'
 
-# base_dir = dirname(abspath(__file__))
-INTERMEDIATE_DIR = 'intermediate'  # join(base_dir, 'intermediate')
-DICTIONARY_PARAMS_FILENAME= join(INTERMEDIATE_DIR, config.dictionary) + '.pkl'
-DICTIONARY_EMBEDDING_FILENAME= join(INTERMEDIATE_DIR, config.dictionary) + '-embedding.pkl'
-
 # DONOTCHANGE: They are reserved for nsml
 # This is for nsml leaderboard
 def bind_model(model, config):
     # 학습한 모델을 저장하는 함수입니다.
     def save(filename, *args):
         checkpoint = {
-            'model': model.state_dict()
+            'model': model.state_dict(),
+            'preprocessor': preprocessor.state_dict()
         }
         torch.save(checkpoint, filename)
 
@@ -96,6 +94,8 @@ def bind_model(model, config):
     def load(filename, *args):
         checkpoint = torch.load(filename)
         model.load_state_dict(checkpoint['model'])
+        preprocessor.load_state_dict(checkpoint['preprocessor'])
+
         print('Model loaded')
 
     def infer(raw_data, **kwargs):
@@ -105,16 +105,6 @@ def bind_model(model, config):
         :return:
         """
         # dataset.py에서 작성한 preprocess 함수를 호출하여, 문자열을 벡터로 변환합니다
-
-
-        dictionary.load(DICTIONARY_PARAMS_FILENAME, DICTIONARY_EMBEDDING_FILENAME)
-
-        for feature_name, feature_extractor in feature_extractor_list:
-            # Load parameters of feature extractors
-            feature_params_filename = join(INTERMEDIATE_DIR, feature_name + '.pkl')
-            feature_extractor.load(feature_params_filename)
-
-        preprocessor = Preprocessor(tokenizer, feature_extractor_list, dictionary)
 
         reviews, features = preprocessor.preprocess_all(raw_data)
         reviews, features = Variable(reviews), Variable(features)
@@ -147,18 +137,10 @@ if config.mode == 'train':
     train_data, val_data = load_data(DATASET_PATH, val_size=0.1)
 
     logger.info("Building preprocessor...")
-    if not exists(INTERMEDIATE_DIR):
-        os.mkdir(INTERMEDIATE_DIR)
-    
-    for feature_name, feature_extractor in feature_extractor_list:
+    for feature_name, feature_extractor in preprocessor.feature_extractors:
         feature_extractor.fit(train_data)
-        # Save parameters of feature extractors
-        feature_params_filename = join(INTERMEDIATE_DIR, feature_name + '.pkl')
-        feature_extractor.save(feature_params_filename)
-        
-    dictionary.build_dictionary(train_data)
-    dictionary.save(DICTIONARY_PARAMS_FILENAME, DICTIONARY_EMBEDDING_FILENAME)
-    preprocessor = Preprocessor(tokenizer, feature_extractor_list, dictionary)
+
+    preprocessor.dictionary.build_dictionary(train_data)
 
     logger.info("Making dataset & dataloader...")
     train_dataset = MovieReviewDataset(train_data, preprocessor, sort=config.sort_dataset, min_length=config.min_length, max_length=config.max_length)
@@ -169,7 +151,7 @@ if config.mode == 'train':
     val_dataloader = DataLoader(dataset=val_dataset, batch_size=config.batch_size, shuffle=True,
                                   collate_fn=collate_fn, num_workers=2)
 
-    if dictionary.embedding is not None:
+    if preprocessor.dictionary.embedding is not None:
         embedding_weights = torch.FloatTensor(dictionary.embedding)
         model.embedding.weight = nn.Parameter(embedding_weights, requires_grad=False)
 
