@@ -74,13 +74,13 @@ class ResidualBlock(nn.Module):
 
 
 class VDCNN(nn.Module):
-    def __init__(self, dictionary, config):
+    def __init__(self, config):
         super(VDCNN, self).__init__()
 
-        vocabulary_size = dictionary.vocabulary_size
+        vocabulary_size = config.vocabulary_size
 
         depth = 9 # config.depth  # 29
-        embed_size = 16 # config.embed_size  # 16
+        embed_size = config.embedding_size # config.embed_size  # 16
         optional_shortcut = True # config.optional_shortcut  # True
         k = 8 # config.k  # 8
 

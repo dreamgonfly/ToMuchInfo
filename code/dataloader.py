@@ -53,7 +53,7 @@ class Preprocessor:
         tokenized_text = self.tokenizer.tokenize(raw_text)
         
         features_extracted = tuple()
-        for feature_extractor in self.feature_extractors:
+        for feature_name, feature_extractor in self.feature_extractors:
             
             feature_extracted = feature_extractor.extract_feature(raw_text, tokenized_text)
             features_extracted += feature_extracted
@@ -61,6 +61,38 @@ class Preprocessor:
         indexed_text = [self.dictionary.indexer(token) for token in tokenized_text]
         
         return indexed_text, features_extracted
+    
+    def preprocess_all(self, raw_text):
+        """raw_text (list of strings)"""
+        
+        data = [self.preprocess(review) for review in raw_text]
+        text_lengths = [len(review) for review, feature in data]
+        longest_length = max(text_lengths)
+        reviews_padded = [pad_text(review, pad=PAD_IDX, min_length=longest_length) for review, feature in
+                          data]
+        features = [feature for review, feature in data]
+
+        reviews_tensor = torch.LongTensor(reviews_padded)
+        features_tensor = torch.FloatTensor(features)
+        return reviews_tensor, features_tensor
+
+    def state_dict(self):
+        # self.tokenizer
+        features_state_dict = {}
+        for feature_name, feature_extractor in self.feature_extractors:
+            features_state_dict[feature_name] = feature_extractor.state_dict()
+
+        dictionary_dict = self.dictionary.state_dict()
+
+        return {'features_state': features_state_dict,
+                'dictionary_state': dictionary_dict}
+
+    def load_state_dict(self, state_dict):
+
+        for feature_name, feature_extractor in self.feature_extractors:
+            feature_extractor.load_state_dict(state_dict['features_state'][feature_name])
+
+        self.dictionary.load_state_dict(state_dict['dictionary_state'])
 
 
 class MovieReviewDataset(Dataset):

@@ -1,5 +1,6 @@
 import argparse
 import os
+from os.path import dirname, abspath, join, exists
 import numpy as np
 
 import torch
@@ -32,20 +33,19 @@ args.add_argument('--iteration', type=str, default='0')
 
 # User options
 args.add_argument('--model', type=str, default='WordCNN', choices=['WordCNN', 'VDCNN'])
-args.add_argument('--tokenizer', type=str, default='DummyTokenizer', choices=['DummyTokenizer','TwitterTokenizer'])
-args.add_argument('--features', type=str, default='LengthFeatureExtractor')
+args.add_argument('--tokenizer', type=str, default='DummyTokenizer', choices=['JamoTokenizer','DummyTokenizer','TwitterTokenizer'])
+args.add_argument('--features', type=str, default='LengthFeatureExtractor')  # LengthFeatureExtractor_MovieActorFeaturesExtractor ...
 args.add_argument('--dictionary', type=str, default='RandomDictionary', choices=['RandomDictionary', 'FasttextDictionary'])
 args.add_argument('--use_gpu', type=bool, default=torch.cuda.is_available() or GPU_NUM)
 args.add_argument('--output', type=int, default=1)
 args.add_argument('--epochs', type=int, default=10)
 args.add_argument('--batch_size', type=int, default=64)
-args.add_argument('--max_vocab_size', type=int, default=50000)
-args.add_argument('--min_count', type=int, default=None)
+args.add_argument('--vocabulary_size', type=int, default=50000)
+args.add_argument('--embedding_size', type=int, default=100)
 args.add_argument('--min_length', type=int, default=5)
 args.add_argument('--max_length', type=int, default=300)
 args.add_argument('--sort_dataset', action='store_true')
 args.add_argument('--shuffle_dataset', action='store_true')
-args.add_argument('--embedding_size', type=int, default=100)
 args.add_argument('--learning_rate', type=float, default=0.01)
 args.add_argument('--lr_schedule', action='store_true')
 args.add_argument('--print_every', type=int, default=1)
@@ -65,10 +65,19 @@ Dictionary = getattr(dictionaries, config.dictionary)
 dictionary = Dictionary(tokenizer, config)
 
 feature_extractor_list = []
-for feature_name in config.features.split():
+for feature_name in config.features.split('_'):
     FeatureExtractor = getattr(feature_extractors, feature_name)
     feature_extractor = FeatureExtractor(config)
-    feature_extractor_list.append(feature_extractor)
+    feature_extractor_list.append((feature_name, feature_extractor))
+
+preprocessor = Preprocessor(tokenizer, feature_extractor_list, dictionary)
+
+model = Model(config)
+if config.use_gpu:
+    model = model.cuda()
+
+if not HAS_DATASET and not IS_ON_NSML:  # It is not running on nsml
+    DATASET_PATH = 'data/movie_review_phase1/'
 
 # DONOTCHANGE: They are reserved for nsml
 # This is for nsml leaderboard
@@ -76,7 +85,8 @@ def bind_model(model, config):
     # 학습한 모델을 저장하는 함수입니다.
     def save(filename, *args):
         checkpoint = {
-            'model': model.state_dict()
+            'model': model.state_dict(),
+            'preprocessor': preprocessor.state_dict()
         }
         torch.save(checkpoint, filename)
 
@@ -84,6 +94,8 @@ def bind_model(model, config):
     def load(filename, *args):
         checkpoint = torch.load(filename)
         model.load_state_dict(checkpoint['model'])
+        preprocessor.load_state_dict(checkpoint['preprocessor'])
+
         print('Model loaded')
 
     def infer(raw_data, **kwargs):
@@ -93,12 +105,16 @@ def bind_model(model, config):
         :return:
         """
         # dataset.py에서 작성한 preprocess 함수를 호출하여, 문자열을 벡터로 변환합니다
-        # Not yet implemented
-        reviews, features = preprocessor.preprocess(raw_data)
+
+        reviews, features = preprocessor.preprocess_all(raw_data)
+        reviews, features = Variable(reviews), Variable(features)
+        if config.use_gpu:
+            reviews, features = reviews.cuda(), features.cuda()
+
         model.eval()
         # 저장한 모델에 입력값을 넣고 prediction 결과를 리턴받습니다
         output_prediction = model(reviews, features)
-        point = output_prediction.data.squeeze(dim=1).tolist()
+        point = output_prediction.data.tolist()
         # DONOTCHANGE: They are reserved for nsml
         # 리턴 결과는 [(confidence interval, 포인트)] 의 형태로 보내야만 리더보드에 올릴 수 있습니다. 리더보드 결과에 confidence interval의 값은 영향을 미치지 않습니다
         return list(zip(np.zeros(len(point)), point))
@@ -107,8 +123,8 @@ def bind_model(model, config):
     # nsml에서 지정한 함수에 접근할 수 있도록 하는 함수입니다.
     nsml.bind(save=save, load=load, infer=infer)
 
-if not HAS_DATASET and not IS_ON_NSML:  # It is not running on nsml
-    DATASET_PATH = 'data/movie_review_phase1/'
+# DONOTCHANGE: Reserved for nsml use
+bind_model(model, config)
 
 # DONOTCHANGE: They are reserved for nsml
 if config.pause:
@@ -121,10 +137,10 @@ if config.mode == 'train':
     train_data, val_data = load_data(DATASET_PATH, val_size=0.1)
 
     logger.info("Building preprocessor...")
-    for feature_extractor in feature_extractor_list:
+    for feature_name, feature_extractor in preprocessor.feature_extractors:
         feature_extractor.fit(train_data)
-    dictionary.build_dictionary(train_data)
-    preprocessor = Preprocessor(tokenizer, feature_extractor_list, dictionary)
+
+    preprocessor.dictionary.build_dictionary(train_data)
 
     logger.info("Making dataset & dataloader...")
     train_dataset = MovieReviewDataset(train_data, preprocessor, sort=config.sort_dataset, min_length=config.min_length, max_length=config.max_length)
@@ -135,17 +151,14 @@ if config.mode == 'train':
     val_dataloader = DataLoader(dataset=val_dataset, batch_size=config.batch_size, shuffle=True,
                                   collate_fn=collate_fn, num_workers=2)
 
-    model = Model(dictionary, config)
-    if config.use_gpu:
-        model = model.cuda()
-
-    # DONOTCHANGE: Reserved for nsml use
-    bind_model(model, config)
+    if preprocessor.dictionary.embedding is not None:
+        embedding_weights = torch.FloatTensor(dictionary.embedding)
+        model.embedding.weight = nn.Parameter(embedding_weights, requires_grad=False)
 
     criterion = nn.MSELoss(size_average=False)
     trainable_params = [p for p in model.parameters() if p.requires_grad]
     optimizer = optim.Adam(params=trainable_params, lr=config.learning_rate)
-    lr_scheduler = optim.lr_scheduler.ReduceLROnPlateau(optimizer, factor=0.7, patience=5, min_lr=0.00005)
+    lr_scheduler = optim.lr_scheduler.StepLR(optimizer, step_size=2, gamma=0.8)  # .ReduceLROnPlateau(optimizer, factor=0.7, patience=5, min_lr=0.00005)
 
     trainer = Trainer(model, train_dataloader, val_dataloader, criterion=criterion, optimizer=optimizer,
                       lr_schedule=config.lr_schedule, lr_scheduler=lr_scheduler, use_gpu=config.use_gpu, logger=logger)
