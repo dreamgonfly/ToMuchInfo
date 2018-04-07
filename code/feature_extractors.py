@@ -213,12 +213,12 @@ class ScoreExpressionExtractor:
             star = stars[-1]
             star = int(star)
             if star>10:star=10
-            values[star] = 1
+            values[star-1] = 1
         elif scores:
             score = scores[-1].replace('점','')
             score = int(score)
             if score>10:score=10
-            values[score] = 1
+            values[score-1] = 1
             
         return tuple(values)
 
@@ -248,3 +248,10 @@ class SleepnessExtractor:
                 sleepy = 1
         return sleepy,
 
+if __name__=='__main__':
+    class Config:
+        pass
+    test_raw = ['안녕 씨발 졸리다 씨1발 졸고있어 별 20개 별 10개 9.5점']
+    test_token = [['안녕', '씨빨']]
+    extractor = ScoreExpressionExtractor(Config)
+    extractor.extract_feature(test_raw, test_token)
