@@ -251,7 +251,7 @@ class SleepnessExtractor:
 if __name__=='__main__':
     class Config:
         pass
-    test_raw = ['안녕 씨발 졸리다 씨1발 졸고있어 별 20개 별 10개 9.5점']
+    test_raw = '안녕 씨발 졸리다 씨1발 졸고있어 별 20개 별 10개 9.5점'
     test_token = [['안녕', '씨빨']]
     extractor = ScoreExpressionExtractor(Config)
     extractor.extract_feature(test_raw, test_token)
