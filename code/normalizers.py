@@ -1,3 +1,4 @@
+import re
 
 class DummyNormalizer:
     """A dummy normalizer which does nothing"""

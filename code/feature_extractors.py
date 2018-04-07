@@ -1,6 +1,8 @@
 import re
 from collections import defaultdict, Counter
 import numpy as np
+from konlpy.tag import Twitter
+
 
 class LengthFeatureExtractor:
     """A dummy feature extractor that counts the number of tokens"""
@@ -39,7 +41,7 @@ class ImportantWordFeaturesExtractor:
     Extracts negative words, bad words, reverse words, specific words('ㅋ','ㅜ') 
     """
     def __init__(self, config):
-        self.re_badwods = re.cxompile("시[0-9]*발")
+        self.re_badwords = re.compile("시[0-9]*발")
         self.n = 7
     
     def fit(self, data):
@@ -167,8 +169,8 @@ class AbnormalWordExtractor:
     되게 유의미할 것 같은 단어들 one-hot encoding
     """
 
-    def __init__(self):
-        self.n = None
+    def __init__(self, config):
+        self.n = 3
         pass
 
     def fit(self, data):
@@ -191,7 +193,7 @@ class ScoreExpressionExtractor:
     Extracts score expressions
     """
 
-    def __init__(self):
+    def __init__(self, config):
         self.re_score = re.compile("[1-9]?[0-9]점")
         self.re_star = re.compile("별 ?[0-9]?[0-9반] ?개")
         self.n = 10
@@ -208,9 +210,14 @@ class ScoreExpressionExtractor:
         scores = self.re_score.findall(raw_text)
         stars = self.re_star.findall(raw_text)
         if stars:
-            values[stars[-1]] = 1
+            star = stars[-1].replace('개','').replace('별','')
+            star = int(star)
+            values[star] = 1
         elif scores:
-            values[scores[-1]] = 1
+            score = scores[-1].replace('점','')
+            score = int(score)
+            values[score] = 1
+            
         return tuple(values)
 
 
@@ -219,7 +226,7 @@ class SleepnessExtractor:
     Extracts 졸리다, 자다 expressions
     """
 
-    def __init__(self):
+    def __init__(self, config):
         self.twitter = Twitter()
         self.n = 1
 
@@ -238,3 +245,4 @@ class SleepnessExtractor:
             if token in sleep_expressions:
                 sleepy = 1
         return sleepy,
+

@@ -24,6 +24,8 @@ setup(
     description='',
     install_requires=[
         'tqdm',
-        'jamo'
+        'jamo',
+        'JPype1-py3',
+        'konlpy'
     ]
 )
