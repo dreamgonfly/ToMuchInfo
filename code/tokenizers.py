@@ -39,8 +39,8 @@ class JamoTokenizer:
         return self.movie_actor.findall(jamo_text)
 
 
-class JamoMaskingTokenizer:
-    """Split text into jamo's"""
+class JamoMaskedTokenizer:
+    """Split text into jamo's and mask movie names and actor names"""
 
     def __init__(self, config):
         self.mv = re.compile(r'mv[0-9]{2,10}')
@@ -65,5 +65,5 @@ class JamoMaskingTokenizer:
 
 if __name__ == '__main__':
 
-    tokenizer = JamoMaskingTokenizer(None)
+    tokenizer = JamoMaskedTokenizer(None)
     assert tokenizer.tokenize("ac01431291의 출연만으로도 충분히 mv00069433.") == "🐱ㅇㅢ ㅊㅜㄹㅇㅕㄴㅁㅏㄴㅇㅡㄹㅗㄷㅗ ㅊㅜㅇㅂㅜㄴㅎㅣ 🐶."
