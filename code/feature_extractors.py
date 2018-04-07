@@ -215,7 +215,7 @@ class ScoreExpressionExtractor:
             if star>10:star=10
             values[star-1] = 1
         elif scores:
-            score = scores[-1].replace('점','')
+            score = scores[-1].replace('점','').replace('반','0')
             score = int(score)
             if score>10:score=10
             values[score-1] = 1
