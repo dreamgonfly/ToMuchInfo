@@ -6,7 +6,7 @@ class LengthFeatureExtractor:
     """A dummy feature extractor that counts the number of tokens"""
     
     def __init__(self, config):
-        self.n = 1
+        self.n = 2
 
     def fit(self, data):
         pass
@@ -20,10 +20,12 @@ class LengthFeatureExtractor:
             
         Returns:
             A tuple that represents the counts of tokens.
+            [0] length of the text
+            [1] number of tokens
         """
         
         counts = len(tokenized_text)
-        return counts,  # make it a tuple
+        return len(raw_text), counts,   # make it a tuple
 
     def state_dict(self):
         return None
@@ -31,35 +33,6 @@ class LengthFeatureExtractor:
     def load_state_dict(self, state_dict):
         pass
 
-class BasicFeaturesExtractor:
-    """
-    Extracts basic features of raw text
-    """
-    def __init__(self, config):
-        self.n = 2
-    
-    def fit(self, data):
-        """
-        Args:
-            data : (raw_text, score)로 이루어진 list
-        Returns:
-            raise NotImplementedError if not implemented
-        """
-        pass
-    
-    def extract_feature(self, raw_text, tokenized_text):
-        """
-        Returns:
-            [0] raw text의 길이
-            [1] token의 수
-        """
-        return len(raw_text), len(tokenized_text)
-
-    def state_dict(self):
-        return None
-
-    def load_state_dict(self, state_dict):
-        pass
 
 class ImportantWordFeaturesExtractor:
     """
@@ -187,3 +160,81 @@ class MovieActorFeaturesExtractor:
         self.movies_dict = state_dict['movies_dict']
         self.actors_dict = state_dict['actors_dict']
         self.global_stat = state_dict['global_stat']
+
+
+class AbnormalWordExtractor:
+    """
+    되게 유의미할 것 같은 단어들 one-hot encoding
+    """
+
+    def __init__(self):
+        self.n = None
+        pass
+
+    def fit(self, data):
+        pass
+
+    def extract_feature(self, raw_text, tokenized_text):
+        abnormal_words_list = ['다세포', '형래', '우뢰매']
+
+        self.n = len(abnormal_words_list)
+        values = [0] * self.n
+
+        for i, word in enumerate(abnormal_words_list):
+            if word in raw_text: values[i] = 1
+
+        return tuple(values)
+
+
+class ScoreExpressionExtractor:
+    """
+    Extracts score expressions
+    """
+
+    def __init__(self):
+        self.re_score = re.compile("[1-9]?[0-9]점")
+        self.re_star = re.compile("별 ?[0-9]?[0-9반] ?개")
+        self.n = 10
+
+    def fit(self, data):
+        pass
+
+    def extract_feature(self, raw_text, tokenized_text):
+        """
+        Returns:
+            ??점을 말할 경우 그 값을 반환. 여러 개일 경우 마지막 값을 반환
+        """
+        values = [0] * 10
+        scores = self.re_score.findall(raw_text)
+        stars = self.re_star.findall(raw_text)
+        if stars:
+            values[stars[-1]] = 1
+        elif scores:
+            values[scores[-1]] = 1
+        return tuple(values)
+
+
+class SleepnessExtractor:
+    """
+    Extracts 졸리다, 자다 expressions
+    """
+
+    def __init__(self):
+        self.twitter = Twitter()
+        self.n = 1
+
+    def fit(self, data):
+        pass
+
+    def extract_feature(self, raw_text, tokenized_text):
+        """
+        Returns:
+            졸리다라는 표현과 유사한 표현이 있는지 여부를 반환
+        """
+        sleepy = 0
+        sleep_expressions = ['졸리다', '졸다', '자다', '자다']
+        stem_tokens = self.twitter.pos(raw_text, norm=True, stem=True)
+        for token, pos in stem_tokens:
+            if token in sleep_expressions:
+                sleepy = 1
+        return sleepy,
