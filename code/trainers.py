@@ -1,6 +1,7 @@
 from os.path import dirname, abspath, join, exists
 import os
 from datetime import datetime
+from tqdm import tqdm
 import torch
 from torch.autograd import Variable
 
@@ -45,7 +46,7 @@ class Trainer():
 
         self.batch_losses = []
 #         self.batch_metrics = []
-        for inputs, features, targets in self.train_dataloader:
+        for inputs, features, targets in tqdm(self.train_dataloader):
 
             if self.use_gpu:
                 self.inputs, self.features, self.targets = Variable(inputs.cuda()), Variable(features.cuda()), Variable(targets.cuda())

@@ -4,7 +4,6 @@ import random
 from sklearn.model_selection import train_test_split
 import torch
 from torch.utils.data import Dataset
-from konlpy.tag import Twitter
 
 # Random seed
 np.random.seed(0)
@@ -14,9 +13,10 @@ PAD_IDX = 0
 
 
 def load_data(dataset_path, val_size=0.3):
+
     data_review = os.path.join(dataset_path, 'train', 'train_data')
     data_label = os.path.join(dataset_path, 'train', 'train_label')
-
+    
     with open(data_review, 'rt', encoding='utf-8') as f:
         reviews = f.readlines()
     
@@ -25,12 +25,6 @@ def load_data(dataset_path, val_size=0.3):
     
     data = [(review, label) for review, label in zip(reviews, labels)]
     train_data, val_data = train_test_split(data, test_size=val_size)
-
-    ## LSTM 을 위한 나머지 버리기. 32는 batch size. batch size를 고침에 따라 이부분도 고쳐야한다.
-    remainder = len(train_data) % 32
-    train_data = train_data[:-remainder]
-    remainder = len(val_data) % 32
-    val_data = val_data[:-remainder]
     
     return train_data, val_data
 
@@ -38,6 +32,7 @@ def load_data(dataset_path, val_size=0.3):
 class Preprocessor:
     
     def __init__(self, tokenizer, feature_extractors, dictionary):
+        
         self.tokenizer = tokenizer
         self.feature_extractors = feature_extractors
         self.dictionary = dictionary

@@ -1,7 +1,5 @@
 from jamo import h2j, j2hcj
 import re
-from konlpy.tag import Twitter
-
 
 class DummyTokenizer:
     """A dummy tokenizer that splits a sentence by space"""
@@ -65,32 +63,7 @@ class JamoMaskedTokenizer:
         return ac_replaced
 
 
-class TwitterTokenizer:
-    """Noun, Adjective, Verb만 output 내는 tokenizer"""
-
-    def __init__(self, config):
-        self.tw = Twitter()
-        pass
-
-    def tokenize(self, raw_text):
-        """
-        Args:
-            raw_text: A string of raw text. For example : "무궁화 꽃이 피었습니다."
-
-        Returns:
-            A list of tokens. For example:
-
-            ['무궁화', '꽃이', '피었습니다.']
-        """
-        poses = self.tw.pos(raw_text, norm=True)
-        output = []
-        for token, pos in poses:
-            output.append(token+'_'+pos)
-        return output
-
-
 if __name__ == '__main__':
-    
+
     tokenizer = JamoMaskedTokenizer(None)
     assert tokenizer.tokenize("ac01431291의 출연만으로도 충분히 mv00069433.") == "🐱ㅇㅢ ㅊㅜㄹㅇㅕㄴㅁㅏㄴㅇㅡㄹㅗㄷㅗ ㅊㅜㅇㅂㅜㄴㅎㅣ 🐶."
-
