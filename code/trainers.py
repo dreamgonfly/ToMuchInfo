@@ -53,6 +53,10 @@ class Trainer():
                 self.inputs, self.features, self.targets = Variable(inputs), Variable(features), Variable(targets)
 
             self.optimizer.zero_grad()
+######################################################3 상헌
+            self.model.batch_size = len(self.targets.data)
+            self.model.hidden = self.model.init_hidden()
+######################################################3 상헌
             self.outputs = self.model(self.inputs, self.features)
             batch_loss = self.criterion(self.outputs, self.targets)
 #             batch_metric = self.accuracy(self.outputs, self.targets)

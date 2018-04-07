@@ -16,24 +16,29 @@ class LSTMClassifier(nn.Module):
         self.hidden_dim = 100
         self.label_size = 10
         self.layer_number = 2
-        self.batch_size = 32
+        self.batch_size = 100
         ###########################################
-        self.hidden_dim = hidden_dim
         self.word_embeddings = nn.Embedding(config.vocabulary_size, config.embedding_size)
-        self.lstm = nn.LSTM(config.embedding_size, hidden_dim,self.layer_number)
+        self.lstm = nn.LSTM(config.embedding_size, self.hidden_dim,self.layer_number)
+        self.B1 = nn.BatchNorm1d(self.hidden_dim)
         self.hidden2label = nn.Linear(self.hidden_dim, self.label_size)
+        self.B2 = nn.BatchNorm1d(self.label_size)
+        self.label2score = nn.Linear(self.label_size,1)
         self.hidden = self.init_hidden()
 
     def init_hidden(self):
         # the first is the hidden h
         # the second is the cell  c
-        return (autograd.Variable(torch.zeros(self.layer_number, self.batch_size, self.hidden_dim)),
-                autograd.Variable(torch.zeros(self.layer_number, self.batch_size, self.hidden_dim)))
+        return (autograd.Variable(torch.zeros(self.layer_number, self.batch_size, self.hidden_dim)).cuda(),
+                autograd.Variable(torch.zeros(self.layer_number, self.batch_size, self.hidden_dim)).cuda())
 
     def forward(self, reviews,features):
         embeds = self.word_embeddings(reviews)
-        x = embeds.view(len(reviews), self.batch_size, -1)
+        x = embeds.transpose(0,1)
         lstm_out, self.hidden = self.lstm(x, self.hidden)
+        y = self.B1(lstm_out[-1])
         y  = self.hidden2label(lstm_out[-1])
-        log_probs = F.log_softmax(y)
-        return log_probs
+        y = self.B2(y)
+        y = self.label2score(y)
+#        log_probs = F.log_softmax(y,dim=1)
+        return y
