@@ -31,10 +31,11 @@ def load_data(dataset_path, val_size=0.3):
 
 class Preprocessor:
     
-    def __init__(self, config, tokenizer, feature_extractors, dictionary):
+    def __init__(self, config, normalizer, tokenizer, feature_extractors, dictionary):
 
         self.min_length = config.min_length
         self.max_length = config.max_length
+        self.normalizer = normalizer
         self.tokenizer = tokenizer
         self.feature_extractors = feature_extractors
         self.dictionary = dictionary
@@ -52,7 +53,8 @@ class Preprocessor:
             ([0, 2, 3], (1, 0.7, 0.1))
         """
 
-        tokenized_text = self.tokenizer.tokenize(raw_text)
+        normalized_text = self.normalizer.normalize(raw_text)
+        tokenized_text = self.tokenizer.tokenize(normalized_text )
         
         features_extracted = tuple()
         for feature_name, feature_extractor in self.feature_extractors:

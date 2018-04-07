@@ -8,6 +8,7 @@ from torch.autograd import Variable
 from torch import nn, optim
 from torch.utils.data import DataLoader
 
+import normalizers
 import tokenizers
 import feature_extractors
 import dictionaries
@@ -33,7 +34,8 @@ args.add_argument('--iteration', type=str, default='0')
 
 # User options
 args.add_argument('--model', type=str, default='WordCNN', choices=['WordCNN', 'VDCNN'])
-args.add_argument('--tokenizer', type=str, default='JamoTokenizer', choices=['JamoTokenizer', 'DummyTokenizer'])
+args.add_argument('--normalizer', type=str, default='DummyNormalizer')
+args.add_argument('--tokenizer', type=str, default='JamoTokenizer')
 args.add_argument('--features', type=str, default='LengthFeatureExtractor')  # LengthFeatureExtractor_MovieActorFeaturesExtractor ...
 args.add_argument('--dictionary', type=str, default='RandomDictionary', choices=['RandomDictionary', 'FasttextDictionary'])
 args.add_argument('--use_gpu', type=bool, default=torch.cuda.is_available() or GPU_NUM)
@@ -58,6 +60,9 @@ logger.info('Arguments: {}'.format(config))
 if config.model == 'WordCNN': Model = WordCNN
 elif config.model == 'VDCNN': Model = VDCNN
 
+Normalizer = getattr(normalizers, config.normalizer)
+normalizer = Normalizer(config)
+
 Tokenizer = getattr(tokenizers, config.tokenizer)
 tokenizer = Tokenizer(config)
 
@@ -70,7 +75,7 @@ for feature_name in config.features.split('_'):
     feature_extractor = FeatureExtractor(config)
     feature_extractor_list.append((feature_name, feature_extractor))
 
-preprocessor = Preprocessor(config, tokenizer, feature_extractor_list, dictionary)
+preprocessor = Preprocessor(config, normalizer, tokenizer, feature_extractor_list, dictionary)
 
 model = Model(config)
 if config.use_gpu:
