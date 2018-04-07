@@ -38,6 +38,7 @@ class Preprocessor:
         self.normalizer = normalizer
         self.tokenizer = tokenizer
         self.feature_extractors = feature_extractors
+        self.n_features = sum([feature_extractor.n for feature_name, feature_extractor in feature_extractors])
         self.dictionary = dictionary
         
     def preprocess(self, raw_text):

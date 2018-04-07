@@ -6,7 +6,7 @@ class LengthFeatureExtractor:
     """A dummy feature extractor that counts the number of tokens"""
     
     def __init__(self, config):
-        pass
+        self.n = 1
 
     def fit(self, data):
         pass
@@ -36,7 +36,7 @@ class BasicFeaturesExtractor:
     Extracts basic features of raw text
     """
     def __init__(self, config):
-        pass
+        self.n = 2
     
     def fit(self, data):
         """
@@ -53,7 +53,7 @@ class BasicFeaturesExtractor:
             [0] raw text의 길이
             [1] token의 수
         """
-        return len(raw_text), len(tokenized_text),
+        return len(raw_text), len(tokenized_text)
 
     def state_dict(self):
         return None
@@ -66,7 +66,8 @@ class ImportantWordFeaturesExtractor:
     Extracts negative words, bad words, reverse words, specific words('ㅋ','ㅜ') 
     """
     def __init__(self, config):
-        self.re_badwords = re.compile("시[0-9]*발")
+        self.re_badwods = re.cxompile("시[0-9]*발")
+        self.n = 7
     
     def fit(self, data):
         """
@@ -121,6 +122,7 @@ class MovieActorFeaturesExtractor:
         self.movies_dict = None
         self.actors_dict = None
         self.global_stat = None
+        self.n = 4
     
     def fit(self, data, threshold=20):
         """

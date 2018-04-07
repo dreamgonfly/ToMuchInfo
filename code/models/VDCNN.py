@@ -74,7 +74,7 @@ class ResidualBlock(nn.Module):
 
 
 class VDCNN(nn.Module):
-    def __init__(self, config):
+    def __init__(self, config, n_features):
         super(VDCNN, self).__init__()
 
         vocabulary_size = config.vocabulary_size

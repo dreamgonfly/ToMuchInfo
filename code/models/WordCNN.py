@@ -3,7 +3,7 @@ from torch import nn
 
 
 class WordCNN(nn.Module):
-    def __init__(self, config):
+    def __init__(self, config, n_features):
         super(WordCNN, self).__init__()
 
         kernel_sizes = [3,4,5] # config.kernel_sizes

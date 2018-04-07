@@ -77,7 +77,7 @@ for feature_name in config.features.split('_'):
 
 preprocessor = Preprocessor(config, normalizer, tokenizer, feature_extractor_list, dictionary)
 
-model = Model(config)
+model = Model(config, n_features=preprocessor.n_features)
 if config.use_gpu:
     model = model.cuda()
 
