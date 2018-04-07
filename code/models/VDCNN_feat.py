@@ -126,9 +126,10 @@ class VDCNN_feat(nn.Module):
         linear_layers.append(nn.Linear(2048, 2048))
         linear_layers.append(nn.Linear(2048, 128))
 
-        self.final_layer = nn.Linear(128 + n_features, 1)
-
         self.linear_layers = nn.Sequential(*linear_layers)
+
+        self.final_layer = nn.Linear(128 + n_features, 1)
+        self.final_bn = nn.BatchNorm1d(num_features=128 + n_features)
 
     def forward(self, sentences, features):
 
@@ -141,7 +142,7 @@ class VDCNN_feat(nn.Module):
         # print(x.shape)
         x = self.linear_layers(x)
         x_features = torch.cat([x, features], dim=1)
-        final_output = self.final_layer(x_features)
+        final_output = self.final_layer(self.final_bn(x_features))
         return final_output.squeeze()
 
 
