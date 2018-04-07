@@ -79,7 +79,7 @@ class VDCNN(nn.Module):
 
         vocabulary_size = config.vocabulary_size
 
-        depth = 9 # config.depth  # 29
+        depth = 17 # config.depth  # 29
         embed_size = config.embedding_size # config.embed_size  # 16
         optional_shortcut = True # config.optional_shortcut  # True
         k = 8 # config.k  # 8
