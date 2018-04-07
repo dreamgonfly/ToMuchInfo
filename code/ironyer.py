@@ -161,6 +161,6 @@ def irony_deleter(text,label):
             return False
         elif "굿" in text:
             return False
-        elif text in candidate_one:
+        elif text.replace('"','').strip() in candidate_one:
             return False
     return True
