@@ -4,6 +4,7 @@ import random
 from sklearn.model_selection import train_test_split
 import torch
 from torch.utils.data import Dataset
+from konlpy.tag import Twitter
 
 # Random seed
 np.random.seed(0)
@@ -13,10 +14,9 @@ PAD_IDX = 0
 
 
 def load_data(dataset_path, val_size=0.3):
-
     data_review = os.path.join(dataset_path, 'train', 'train_data')
     data_label = os.path.join(dataset_path, 'train', 'train_label')
-    
+
     with open(data_review, 'rt', encoding='utf-8') as f:
         reviews = f.readlines()
     
@@ -38,7 +38,6 @@ def load_data(dataset_path, val_size=0.3):
 class Preprocessor:
     
     def __init__(self, tokenizer, feature_extractors, dictionary):
-        
         self.tokenizer = tokenizer
         self.feature_extractors = feature_extractors
         self.dictionary = dictionary

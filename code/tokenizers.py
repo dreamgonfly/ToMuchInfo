@@ -48,8 +48,7 @@ class TwitterTokenizer:
         pass
 
     def tokenize(self, raw_text):
-        """Noun, Verb, Adjective output 내는 tokenizer
-
+        """
         Args:
             raw_text: A string of raw text. For example : "무궁화 꽃이 피었습니다."
 
@@ -58,9 +57,8 @@ class TwitterTokenizer:
 
             ['무궁화', '꽃이', '피었습니다.']
         """
-        poses = self.tw.pos(raw_text)
+        poses = self.tw.pos(raw_text, norm=True)
         output = []
-        for word, pos in poses:
-            if(pos == "Noun" or pos == "Verb" or pos == "Adjective"):
-                output.append(word+'_'+pos)
+        for token, pos in poses:
+            output.append(token+'_'+pos)
         return output
