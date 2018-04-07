@@ -35,15 +35,15 @@ args.add_argument('--iteration', type=str, default='0')
 # User options
 args.add_argument('--model', type=str, default='WordCNN', choices=['WordCNN', 'VDCNN','BiLSTM'])
 args.add_argument('--tokenizer', type=str, default='DummyTokenizer', choices=['JamoTokenizer','DummyTokenizer','TwitterTokenizer'])
-args.add_argument('--features', type=str, default='LengthFeatureExtractor')  # LengthFeatureExtractor_MovieActorFeaturesExtractor ...
-args.add_argument('--dictionary', type=str, default='RandomDictionary', choices=['RandomDictionary', 'FasttextDictionary'])
+args.add_argument('--features', type=str, default='LengthFeatureExtractor_MovieActorFeaturesExtractor')  # LengthFeatureExtractor_MovieActorFeaturesExtractor ...
+args.add_argument('--dictionary', type=str, default='FastTextVectorizer', choices=['RandomDictionary', 'FastTextVectorizer'])
 args.add_argument('--use_gpu', type=bool, default= True)
 args.add_argument('--output', type=int, default=1)
-args.add_argument('--epochs', type=int, default=10)
-args.add_argument('--batch_size', type=int, default=64)
+args.add_argument('--epochs', type=int, default=100)
+args.add_argument('--batch_size', type=int, default=64)traintrain
 args.add_argument('--vocabulary_size', type=int, default=50000)
-args.add_argument('--embedding_size', type=int, default=100)
-args.add_argument('--min_length', type=int, default=5)
+args.add_argument('--embedding_size', type=int, default=256)
+args.add_argument('--min_length', type=int, default=1)
 args.add_argument('--max_length', type=int, default=300)
 args.add_argument('--sort_dataset', action='store_true')
 args.add_argument('--shuffle_dataset', action='store_true')
@@ -155,7 +155,7 @@ if config.mode == 'train':
 
     if preprocessor.dictionary.embedding is not None:
         embedding_weights = torch.FloatTensor(dictionary.embedding)
-        model.embedding.weight = nn.Parameter(embedding_weights, requires_grad=False)
+        model.embedding.weight = nn.Parameter(embedding_weights, requires_grad=True)
 
     criterion = nn.MSELoss(size_average=False)
     trainable_params = [p for p in model.parameters() if p.requires_grad]

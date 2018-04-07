@@ -77,24 +77,32 @@ class FastTextVectorizer:
     def _build_vocabulary(self, data):
         reviews = [review for review, label in data]
         tokenized_reviews = [self.tokenizer.pos(review, norm=True) for review in reviews]
-        tokenized_reviews = [[token for token, pos in tokenized_list] for tokenized_list in tokenized_reviews]
-        tokenized_tags = [[pos for token, pos in tokenized_list] for tokenized_list in tokenized_reviews]
+        
+        tokens = [[token for token, pos in tokenized_list] for tokenized_list in tokenized_reviews]
+        tags = [[pos for token, pos in tokenized_list] for tokenized_list in tokenized_reviews]
 
-        self.fasttext = FastText(sentences=[' '.join(review) for review in tokenized_reviews],
+        self.fasttext = FastText(sentences=[' '.join(review) for review in tokens],
                                  size=self.embedding_size,
-                                 max_vocab_size=self.vocabulary_size)
+                                 max_vocab_size=self.vocabulary_size-2)
 
         vocab_words = self.fasttext.wv.vocab
-        word2idx = {word: idx for idx, word in enumerate(vocab_words)}
+        word2idx = {word:idx for idx, word in enumerate(vocab_words)}
+        word2idx['<UNK>'] = self.vocabulary_size-1
+        word2idx['<PAD>'] = self.vocabulary_size
+        
         idx2word = {idx:word for idx, word in enumerate(vocab_words)}
-
+        idx2word[self.vocabulary_size-1] = '<UNK>'
+        idx2word[self.vocabulary_size] = '<PAD>'
+        
         return vocab_words, word2idx, idx2word
 
     def load_vectors(self):
         word_vectors = []
         for i in self.idx2word:
             word = self.idx2word[i]
-            vector = self.fasttext.wv[word]
+            if word in ['<UNK>', '<PAD>']:
+                vector = np.zeros(self.embedding_size)
+            else : vector = self.fasttext.wv[word]
             word_vectors.append(vector)
         embedding = np.stack(word_vectors)
         return embedding
