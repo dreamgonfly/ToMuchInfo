@@ -70,7 +70,7 @@ for feature_name in config.features.split('_'):
     feature_extractor = FeatureExtractor(config)
     feature_extractor_list.append((feature_name, feature_extractor))
 
-preprocessor = Preprocessor(tokenizer, feature_extractor_list, dictionary)
+preprocessor = Preprocessor(config, tokenizer, feature_extractor_list, dictionary)
 
 model = Model(config)
 if config.use_gpu:

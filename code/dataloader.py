@@ -31,8 +31,10 @@ def load_data(dataset_path, val_size=0.3):
 
 class Preprocessor:
     
-    def __init__(self, tokenizer, feature_extractors, dictionary):
-        
+    def __init__(self, config, tokenizer, feature_extractors, dictionary):
+
+        self.min_length = config.min_length
+        self.max_length = config.max_length
         self.tokenizer = tokenizer
         self.feature_extractors = feature_extractors
         self.dictionary = dictionary
@@ -49,7 +51,7 @@ class Preprocessor:
 
             ([0, 2, 3], (1, 0.7, 0.1))
         """
-        
+
         tokenized_text = self.tokenizer.tokenize(raw_text)
         
         features_extracted = tuple()
@@ -68,7 +70,14 @@ class Preprocessor:
         data = [self.preprocess(review) for review in raw_text]
         text_lengths = [len(review) for review, feature in data]
         longest_length = max(text_lengths)
-        reviews_padded = [pad_text(review, pad=PAD_IDX, min_length=longest_length) for review, feature in
+        if self.max_length < longest_length:
+            length = self.max_length
+        elif self.min_length < longest_length <= self.max_length:
+            length = longest_length
+        elif longest_length <= self.min_length:
+            length = self.min_length
+
+        reviews_padded = [pad_text(review, pad=PAD_IDX, min_length=length, max_length=length) for review, feature in
                           data]
         features = [feature for review, feature in data]
 
