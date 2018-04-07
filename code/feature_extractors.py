@@ -210,12 +210,12 @@ class ScoreExpressionExtractor:
         scores = self.re_score.findall(raw_text)
         stars = self.re_star.findall(raw_text)
         if stars:
-            star = stars[-1]
+            star = stars[-1].replace('반','0')
             star = int(star)
             if star>10:star=10
             values[star-1] = 1
         elif scores:
-            score = scores[-1].replace('점','').replace('반','0')
+            score = scores[-1].replace('점','')
             score = int(score)
             if score>10:score=10
             values[score-1] = 1
