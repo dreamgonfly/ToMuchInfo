@@ -114,7 +114,7 @@ class Trainer():
                                                    elapsed=self.elapsed_time())
                 self.logger.info(message)
                 nsml.report(summary=True, scope=locals(), epoch=epoch, epoch_total=epochs,
-                            train__loss=epoch_loss, step=epoch)
+                            train__loss=epoch_loss, val__loss=val_epoch_loss, step=epoch)
 
             if epoch % self.save_every == 0:
                 self.logger.info("Saving the model...")
