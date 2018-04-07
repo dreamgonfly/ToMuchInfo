@@ -4,6 +4,7 @@ import random
 from sklearn.model_selection import train_test_split
 import torch
 from torch.utils.data import Dataset
+from ironyer import irony_deleter
 
 # Random seed
 np.random.seed(0)
@@ -113,7 +114,8 @@ class MovieReviewDataset(Dataset):
         global PAD_IDX
         PAD_IDX = PAD_IDX # dictionary.indexer(dictionary.PAD_TOKEN)
 
-        self.data = [(preprocessor.preprocess(review), label) for review, label in data]
+        data_deleted = [(review, label) for review, label in data if irony_deleter(review, label)]
+        self.data = [(preprocessor.preprocess(review), label) for review, label in data_deleted]
 
         if min_length or max_length:
             self.data = [((pad_text(review, PAD_IDX, min_length, max_length), feature), label) for
