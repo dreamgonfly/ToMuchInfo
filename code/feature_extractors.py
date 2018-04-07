@@ -186,6 +186,12 @@ class AbnormalWordExtractor:
             if word in raw_text: values[i] = 1
 
         return tuple(values)
+    
+    def state_dict(self):
+        return None
+
+    def load_state_dict(self, state_dict):
+        pass
 
 
 class ScoreExpressionExtractor:
@@ -221,7 +227,12 @@ class ScoreExpressionExtractor:
             values[score-1] = 1
             
         return tuple(values)
+    
+    def state_dict(self):
+        return None
 
+    def load_state_dict(self, state_dict):
+        pass
 
 class SleepnessExtractor:
     """
@@ -247,6 +258,12 @@ class SleepnessExtractor:
             if token in sleep_expressions:
                 sleepy = 1
         return sleepy,
+    
+    def state_dict(self):
+        return None
+
+    def load_state_dict(self, state_dict):
+        pass
 
 if __name__=='__main__':
     class Config:
