@@ -37,10 +37,10 @@ args.add_argument('--model', type=str, default='WordCNN', choices=['WordCNN', 'V
 args.add_argument('--tokenizer', type=str, default='DummyTokenizer', choices=['JamoTokenizer','DummyTokenizer','TwitterTokenizer'])
 args.add_argument('--features', type=str, default='LengthFeatureExtractor_MovieActorFeaturesExtractor')  # LengthFeatureExtractor_MovieActorFeaturesExtractor ...
 args.add_argument('--dictionary', type=str, default='FastTextVectorizer', choices=['RandomDictionary', 'FastTextVectorizer'])
-args.add_argument('--use_gpu', type=bool, default= True)
+args.add_argument('--use_gpu', type=bool, default= torch.cuda.is_available() or GPU_NUM)
 args.add_argument('--output', type=int, default=1)
 args.add_argument('--epochs', type=int, default=100)
-args.add_argument('--batch_size', type=int, default=64)traintrain
+args.add_argument('--batch_size', type=int, default=64)
 args.add_argument('--vocabulary_size', type=int, default=50000)
 args.add_argument('--embedding_size', type=int, default=256)
 args.add_argument('--min_length', type=int, default=1)
@@ -52,6 +52,8 @@ args.add_argument('--lr_schedule', action='store_true')
 args.add_argument('--print_every', type=int, default=1)
 args.add_argument('--save_every', type=int, default=1)
 config = args.parse_args()
+
+config.lr_schedule = True
 
 logger = utils.get_logger('MovieReview')
 logger.info('Arguments: {}'.format(config))
@@ -79,7 +81,7 @@ if config.use_gpu:
     model = model.cuda()
 
 if not HAS_DATASET and not IS_ON_NSML:  # It is not running on nsml
-    DATASET_PATH = 'data/movie_review_phase1/'
+    DATASET_PATH = 'data/small/'
 
 # DONOTCHANGE: They are reserved for nsml
 # This is for nsml leaderboard
@@ -155,6 +157,8 @@ if config.mode == 'train':
 
     if preprocessor.dictionary.embedding is not None:
         embedding_weights = torch.FloatTensor(dictionary.embedding)
+        if config.use_gpu:
+            embedding_weights = embedding_weights.cuda()
         model.embedding.weight = nn.Parameter(embedding_weights, requires_grad=True)
 
     criterion = nn.MSELoss(size_average=False)

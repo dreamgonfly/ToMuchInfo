@@ -25,8 +25,8 @@ setup(
     install_requires=[
         'tqdm',
         'jamo',
-        'jpype',
+        'Jpype1',
         'konlpy',
-        'gensim'
+        'gensim',
     ]
 )
