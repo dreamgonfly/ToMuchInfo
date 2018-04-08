@@ -1,4 +1,5 @@
 from jamo import h2j, j2hcj
+from konlpy.tag import Twitter
 import re
 
 class DummyTokenizer:

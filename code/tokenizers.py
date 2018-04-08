@@ -1,5 +1,6 @@
 from jamo import h2j, j2hcj
 import re
+from konlpy.tag import Twitter
 
 class DummyTokenizer:
     """A dummy tokenizer that splits a sentence by space"""

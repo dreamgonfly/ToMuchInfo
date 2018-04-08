@@ -134,9 +134,9 @@ class FastTextVectorizer:
     """A dictionary that maps a word to FastText embedding."""
 
     def __init__(self, tokenizer, config):
-        self.tokenizer = Twitter()
+        self.tokenizer = TwitterTokenizer(config)
         self.vocabulary_size = config.vocabulary_size
-        self.embedding_size = 256
+        self.embedding_size = config.embedding_size
         self.PAD_TOKEN = '<PAD>'
         self.UNK_TOKEN = '<UNK>'
         self.fasttext = None
@@ -155,12 +155,12 @@ class FastTextVectorizer:
 
     def _build_vocabulary(self, data):
         reviews = [review for review, label in data]
-        tokenized_reviews = [self.tokenizer.pos(review, norm=True) for review in reviews]
+        tokenized_reviews = [self.tokenizer.tokenize(review, stem=False) for review in reviews]
 
         tokens = [[token for token, pos in tokenized_list] for tokenized_list in tokenized_reviews]
         tags = [[pos for token, pos in tokenized_list] for tokenized_list in tokenized_reviews]
 
-        self.fasttext = FastText(sentences=[' '.join(review) for review in tokens],
+        self.fasttext = FastText(sentences=tokens,
                                  size=self.embedding_size,
                                  max_vocab_size=self.vocabulary_size - 2)
 
@@ -177,8 +177,9 @@ class FastTextVectorizer:
 
     def load_vectors(self):
         word_vectors = []
+        vocab_num = len(self.vocab_words)
         for i in range(self.vocabulary_size):
-            if i in self.idx2word:
+            if i < vocab_num:
                 word = self.idx2word[i]
                 if word in ['<UNK>', '<PAD>']:
                     vector = np.zeros(self.embedding_size)
