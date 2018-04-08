@@ -34,7 +34,7 @@ args.add_argument('--pause', type=int, default=0)
 args.add_argument('--iteration', type=str, default='0')
 
 # User options
-args.add_argument('--model', type=str, default='WordCNN', choices=['WordCNN', 'VDCNN', 'VDCNN_feat'])
+args.add_argument('--model', type=str, default='WordCNN', choices=['WordCNN', 'VDCNN', 'VDCNN_feat', 'VDCNN_feat_dropout'])
 args.add_argument('--normalizer', type=str, default='DummyNormalizer')
 args.add_argument('--tokenizer', type=str, default='JamoTokenizer')
 args.add_argument('--features', type=str, default='LengthFeatureExtractor')  # LengthFeatureExtractor_MovieActorFeaturesExtractor ...
