@@ -79,10 +79,10 @@ class VDCNN_feat(nn.Module):
 
         vocabulary_size = config.vocabulary_size
 
-        depth = 9 # config.depth  # 29
+        depth = 9  # config.depth  # 29
         embed_size = config.embedding_size # config.embed_size  # 16
         optional_shortcut = True # config.optional_shortcut  # True
-        k = 8 # config.k  # 8
+        k = 8  # config.k  # 8
 
         if depth == 9:
             n_conv_layers = {'conv_block_512': 2, 'conv_block_256': 2, 'conv_block_128': 2, 'conv_block_64': 2}
@@ -120,16 +120,31 @@ class VDCNN_feat(nn.Module):
         self.conv_layers = nn.Sequential(*conv_layers)
         self.kmax_pooling = KMaxPool(k=k)
 
-        linear_layers = []
+        self.linear_layers = nn.Sequential(
+            nn.Linear(512 * k, 2048),
+            nn.ReLU(),
+            nn.BatchNorm1d(2048),
+            nn.Linear(2048, 1024),
+            nn.ReLU(),
+            nn.BatchNorm1d(1024),
+            nn.Linear(1024, 128),
+        )
 
-        linear_layers.append(nn.Linear(512 * k, 2048))
-        linear_layers.append(nn.Linear(2048, 2048))
-        linear_layers.append(nn.Linear(2048, 128))
+        self.feature_layers = nn.Sequential(
+            nn.BatchNorm1d(num_features=n_features),
+            nn.Linear(n_features, 32),
+            nn.ReLU(),
+            nn.BatchNorm1d(32),
+            nn.Linear(32, 16),
+        )
 
-        self.linear_layers = nn.Sequential(*linear_layers)
-
-        self.final_layer = nn.Linear(128 + n_features, 1)
-        self.final_bn = nn.BatchNorm1d(num_features=128 + n_features)
+        self.final_layers = nn.Sequential(
+            nn.BatchNorm1d(128 + 16),
+            nn.Linear(128 + 16, 64),
+            nn.ReLU(),
+            nn.BatchNorm1d(64),
+            nn.Linear(64, 1),
+        )
 
     def forward(self, sentences, features):
 
@@ -141,8 +156,9 @@ class VDCNN_feat(nn.Module):
         x = x.view(x.size(0), -1)
         # print(x.shape)
         x = self.linear_layers(x)
+        features = self.feature_layers(features)
         x_features = torch.cat([x, features], dim=1)
-        final_output = self.final_layer(self.final_bn(x_features))
+        final_output = self.final_layers(x_features)
         return final_output.squeeze()
 
 
