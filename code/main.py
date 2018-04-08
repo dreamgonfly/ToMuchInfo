@@ -38,7 +38,7 @@ args.add_argument('--model', type=str, default='WordCNN', choices=['WordCNN', 'V
 args.add_argument('--normalizer', type=str, default='DummyNormalizer')
 args.add_argument('--tokenizer', type=str, default='JamoTokenizer')
 args.add_argument('--features', type=str, default='LengthFeatureExtractor')  # LengthFeatureExtractor_MovieActorFeaturesExtractor ...
-args.add_argument('--dictionary', type=str, default='RandomDictionary', choices=['RandomDictionary', 'FasttextDictionary'])
+args.add_argument('--dictionary', type=str, default='RandomDictionary')
 args.add_argument('--use_gpu', type=bool, default=torch.cuda.is_available() or GPU_NUM)
 args.add_argument('--output', type=int, default=1)
 args.add_argument('--epochs', type=int, default=10)
