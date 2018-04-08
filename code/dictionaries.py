@@ -2,6 +2,7 @@ import numpy as np
 from collections import Counter
 import io
 import pickle
+from tokenizers import TwitterTokenizer
 
 class RandomDictionary:
     """A dictionary that maps a word to an integer. No embedding word vectors."""
