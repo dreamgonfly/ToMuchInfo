@@ -5,6 +5,7 @@ code/wordvectors/
 */.DS_Store
 intermediate/
 !intermediate/.gitkeep
+ai-hackathon-2018/
 
 Sandbox.ipynb
 nsml_client.darwin.amd64.hack.tar.gz
