@@ -121,7 +121,8 @@ def bind_model(model, config):
         model.eval()
         # 저장한 모델에 입력값을 넣고 prediction 결과를 리턴받습니다
         output_prediction = model(reviews, features)
-        point = output_prediction.data.tolist()
+        prediction_clipped = torch.clamp(output_prediction, min=1, max=10)
+        point = prediction_clipped.data.tolist()
         # DONOTCHANGE: They are reserved for nsml
         # 리턴 결과는 [(confidence interval, 포인트)] 의 형태로 보내야만 리더보드에 올릴 수 있습니다. 리더보드 결과에 confidence interval의 값은 영향을 미치지 않습니다
         return list(zip(np.zeros(len(point)), point))
