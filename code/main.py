@@ -8,6 +8,7 @@ from torch.autograd import Variable
 from torch import nn, optim
 from torch.utils.data import DataLoader
 
+import models
 import normalizers
 import tokenizers
 import feature_extractors
@@ -18,12 +19,6 @@ import utils
 
 import nsml
 from nsml import DATASET_PATH, HAS_DATASET, GPU_NUM, IS_ON_NSML
-
-from models.WordCNN import WordCNN
-from models.VDCNN import VDCNN
-from models.VDCNN_feat import VDCNN_feat
-from models.WordCNN_feat import WordCNN_feat
-from models.LSTMText import LSTMText
 
 # Random seed
 np.random.seed(0)
@@ -36,7 +31,7 @@ args.add_argument('--pause', type=int, default=0)
 args.add_argument('--iteration', type=str, default='0')
 
 # User options
-args.add_argument('--model', type=str, default='WordCNN', choices=['WordCNN', 'WordCNN_feat', 'VDCNN', 'VDCNN_feat', 'VDCNN_feat_dropout', 'LSTMText'])
+args.add_argument('--model', type=str, default='WordCNN')
 args.add_argument('--normalizer', type=str, default='DummyNormalizer')
 args.add_argument('--tokenizer', type=str, default='JamoTokenizer')
 args.add_argument('--features', type=str, default='LengthFeatureExtractor')  # LengthFeatureExtractor_MovieActorFeaturesExtractor ...
@@ -60,11 +55,7 @@ config = args.parse_args()
 logger = utils.get_logger('MovieReview')
 logger.info('Arguments: {}'.format(config))
 
-if config.model == 'WordCNN': Model = WordCNN
-elif config.model == 'WordCNN_feat': Model = WordCNN_feat
-elif config.model == 'VDCNN': Model = VDCNN
-elif config.model == 'VDCNN_feat': Model = VDCNN_feat
-elif config.model == 'LSTMText': Model = LSTMText
+Model = getattr(models, config.model)
 
 Normalizer = getattr(normalizers, config.normalizer)
 normalizer = Normalizer(config)
@@ -90,7 +81,7 @@ if config.use_gpu:
     model = model.cuda()
 
 if not HAS_DATASET and not IS_ON_NSML:  # It is not running on nsml
-    DATASET_PATH = 'data/movie_review_phase1/'
+    DATASET_PATH = 'data/small/' # 'data/movie_review_phase1/'
 
 # DONOTCHANGE: They are reserved for nsml
 # This is for nsml leaderboard
