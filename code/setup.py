@@ -26,6 +26,7 @@ setup(
         'tqdm',
         'jamo',
         'JPype1-py3',
-        'konlpy'
+        'konlpy',
+        'gensim'
     ]
 )

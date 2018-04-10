@@ -3,6 +3,8 @@ from collections import Counter
 import io
 import pickle
 from tokenizers import TwitterTokenizer
+from gensim.models import FastText
+
 
 class RandomDictionary:
     """A dictionary that maps a word to an integer. No embedding word vectors."""
