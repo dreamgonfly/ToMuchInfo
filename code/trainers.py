@@ -55,7 +55,10 @@ class Trainer():
 
             self.optimizer.zero_grad()
             self.outputs = self.model(self.inputs, self.features)
-            batch_loss = self.criterion(self.outputs, self.targets)
+            if type(self.outputs) == tuple:
+                batch_loss = self.criterion(self.outputs[0], self.targets) + self.outputs[1]
+            else:
+                batch_loss = self.criterion(self.outputs, self.targets)
 #             batch_metric = self.accuracy(self.outputs, self.targets)
 
             batch_loss.backward()
@@ -77,7 +80,10 @@ class Trainer():
                 self.val_inputs, self.val_features, self.val_targets = Variable(val_inputs), Variable(val_features), Variable(val_targets)
 
             self.val_outputs = self.model(self.val_inputs, self.val_features)
-            val_batch_loss = self.criterion(self.val_outputs, self.val_targets)
+            if type(self.val_outputs) == tuple:
+                val_batch_loss = self.criterion(self.val_outputs[0], self.val_targets) + self.val_outputs[1]
+            else:
+                val_batch_loss = self.criterion(self.val_outputs, self.val_targets)
 #             val_batch_metric = self.accuracy(self.val_outputs, self.val_targets)
             self.val_batch_losses.append(val_batch_loss.data)
 #             self.val_batch_metrics.append(val_batch_metric.data)
