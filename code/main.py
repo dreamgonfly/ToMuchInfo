@@ -90,7 +90,7 @@ if config.use_gpu:
     model = model.cuda()
 
 if not HAS_DATASET and not IS_ON_NSML:  # It is not running on nsml
-    DATASET_PATH = 'data/small/'
+    DATASET_PATH = 'data/movie_review_phase1/'
 
 # DONOTCHANGE: They are reserved for nsml
 # This is for nsml leaderboard
