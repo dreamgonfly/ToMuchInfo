@@ -1,0 +1,1 @@
+nsml run -d movie_phase2 -a "--model=WordCNN --normalizer=BasicNormalizer --tokenizer=TwitterTokenizer --dictionary=FastTextVectorizer --features=MovieActorFeaturesExtractor_AbnormalWordExtractor_ScoreExpressionExtractor_SleepnessExtractor --epochs=100 --sort_dataset --lr_schedule --learning_rate=0.003 --min_length=1 --max_length=50 --embedding_size=128"
