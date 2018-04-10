@@ -2,7 +2,7 @@ import re
 from collections import defaultdict, Counter
 import numpy as np
 from konlpy.tag import Twitter
-
+from sklearn.preprocessing import StandardScaler
 
 class LengthFeatureExtractor:
     """A dummy feature extractor that counts the number of tokens"""
@@ -97,9 +97,9 @@ class MovieActorFeaturesExtractor:
         self.movies_dict = None
         self.actors_dict = None
         self.global_stat = None
-        self.n = 4
+        self.n = 2
     
-    def fit(self, data, threshold=20):
+    def fit(self, data, threshold=50):
         """
         Extract global features of movies and actors
         Args:
@@ -113,19 +113,29 @@ class MovieActorFeaturesExtractor:
                 movies_dict[m_id].append(score)
             for a_id in self.re_actor.findall(comment):
                 actors_dict[a_id].append(score)
-        movies_dict = {movie:l for movie,l in movies_dict.items() if len(l)>threshold}
-        actors_dict = {actor:l for actor,l in actors_dict.items() if len(l)>threshold}
+        movies_dict = {movie:np.mean(l) for movie,l in movies_dict.items() if len(l)>threshold}
+        actors_dict = {actor:np.mean(l) for actor,l in actors_dict.items() if len(l)>threshold}
+
+        # 해당 영화의 평균평점
+        movie_scores = [[score] for score in movies_dict.values()]
+        actor_scores = [[score] for score in actors_dict.values()]
+
+        # 표준화
+        movie_scores = list(StandardScaler().fit_transform(np.array(movie_scores)).ravel())
+        actor_scores = list(StandardScaler().fit_transform(np.array(actor_scores)).ravel())
+
+        movies_dict = {movie:score for movie, score in zip(movies_dict.keys(), movie_scores)}
+        actors_dict = {actor:score for actor, score in zip(actors_dict.keys(), actor_scores)}
+
         self.movies_dict = movies_dict
         self.actors_dict = actors_dict
-        self.global_stat = (np.mean([x[1] for x in data]), np.std([x[1] for x in data]))
+        self.global_stat = np.mean([x[1] for x in data])
                             
     def extract_feature(self, raw_text, tokenized_text):
         """
         Returns:
             [0] 언급된 영화의 평균 평점. 없을 시 전체 영화의 평균평점, 두 개 이상 시 평균
-            [1] 언급된 영화 평점의 표준편차. 없을 시 전체 영화 평점의 표준편차, 두 개 이상 시 평균
-            [2] 언급된 배우의 평균 평점. 없을 시 전체 배우의 평균평점, 두 개 이상 시 평균
-            [3] 언급된 배우 평점의 표준편차. 없을 시 전체 배우 평점의 표준편차, 두 개 이상 시 평균
+            [1] 언급된 배우의 평균 평점. 없을 시 전체 배우의 평균평점, 두 개 이상 시 평균
         """
         movies_dict = self.movies_dict
         actors_dict = self.actors_dict
@@ -133,20 +143,19 @@ class MovieActorFeaturesExtractor:
         movie_scores = []
         for m_id in self.re_movie.findall(raw_text):
             if m_id in movies_dict:
-                movie_scores.append((np.mean(movies_dict[m_id]), np.std(movies_dict[m_id])))
+                movie_scores.append(movies_dict[m_id])
         
         actor_scores = []
         for a_id in self.re_actor.findall(raw_text):
             if a_id in actors_dict:
-                actor_scores.append((np.mean(actors_dict[a_id]), np.std(actors_dict[a_id])))
-        result = [self.global_stat[0], self.global_stat[1]]*2
+                actor_scores.append(actors_dict[a_id])
+
+        result = [self.global_stat]*2
         
         if len(movie_scores)!=0:
-            result[0] = np.mean([x[0] for x in movie_scores])
-            result[1] = np.mean([x[1] for x in movie_scores])
+            result[0] = np.mean(movie_scores)
         if len(actor_scores)!=0:
-            result[2] = np.mean([x[0] for x in actor_scores])
-            result[3] = np.mean([x[1] for x in actor_scores])
+            result[1] = np.mean(actor_scores)
         
         return tuple(result)
     

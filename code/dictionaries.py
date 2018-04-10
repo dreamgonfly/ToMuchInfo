@@ -56,7 +56,7 @@ class RandomDictionary:
 
 
 class FasttextDictionary:
-    """A dictionary that maps a word to FastText embedding."""
+    """A dictionary that maps a token to FastText embedding."""
 
     def __init__(self, tokenizer, config):
         self.tokenizer = tokenizer
@@ -134,7 +134,7 @@ class FasttextDictionary:
 
 
 class FastTextVectorizer:
-    """A dictionary that maps a word to FastText embedding."""
+    """A dictionary that maps a token to FastText embedding."""
 
     def __init__(self, tokenizer, config):
         self.tokenizer = TwitterTokenizer(config)
@@ -206,6 +206,8 @@ class FastTextVectorizer:
         self.word2idx = state_dict['word2idx']
         self.vocab_words = state_dict['vocab_words']
         self.embedding = np.array(state_dict['embedding'])
+
+
 
 
 if __name__ == '__main__':
