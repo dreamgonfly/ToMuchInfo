@@ -18,8 +18,8 @@ class LSTM_Attention(nn.Module):
         """
         super(LSTM_Attention, self).__init__()
 
-        V = 500  # config.vocabulary_size
-        D = 100  # config.embedding_size
+        V = config.vocabulary_size  # config.vocabulary_size
+        D = config.embedding_size  # config.embedding_size
         H = 200  # hidden_size
         H_f = 1000
         O = 1
@@ -34,7 +34,7 @@ class LSTM_Attention(nn.Module):
         else:
             num_directions = 1
 
-        self.embed = nn.Embedding(V, D)
+        self.embedding = nn.Embedding(V, D)
         self.lstm = nn.LSTM(D, H, num_layers, batch_first=True, bidirectional=bidirec)
         self.attn = nn.Linear(num_directions * H, da, bias=False)
         self.tanh = nn.Tanh()
@@ -66,12 +66,12 @@ class LSTM_Attention(nn.Module):
         inputs_lengths: length of each sentences
         """
         # inputs_lengths = (reviews != PAD_IDX).sum(1).data.cpu().numpy().tolist()
-        embed = self.embed(reviews)  # B, T, V  --> B, T, D
+        embedding = self.embedding(reviews)  # B, T, V  --> B, T, D
 
         # 패딩된 문장을 패킹(패딩은 연산 안들어가도록)
-        # packed = pack_padded_sequence(embed, inputs_lengths, batch_first=True)
+        # packed = pack_padded_sequence(embedding, inputs_lengths, batch_first=True)
         # packed: B * T, D
-        output, (hidden, cell) = self.lstm(embed)
+        output, (hidden, cell) = self.lstm(embedding)
         # output: B * T, 2H
         # hidden, cell: num_layers * num_directions, B, H
 
