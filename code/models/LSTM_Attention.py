@@ -66,12 +66,16 @@ class LSTM_Attention(nn.Module):
         inputs_lengths: length of each sentences
         """
         # inputs_lengths = (reviews != PAD_IDX).sum(1).data.cpu().numpy().tolist()
+<<<<<<< HEAD
         embed = self.embedding(reviews)  # B, T, V  --> B, T, D
+=======
+        embedding = self.embedding(reviews)  # B, T, V  --> B, T, D
+>>>>>>> 2a440a88b09ee650089927d0fa62583c42335131
 
         # 패딩된 문장을 패킹(패딩은 연산 안들어가도록)
-        # packed = pack_padded_sequence(embed, inputs_lengths, batch_first=True)
+        # packed = pack_padded_sequence(embedding, inputs_lengths, batch_first=True)
         # packed: B * T, D
-        output, (hidden, cell) = self.lstm(embed)
+        output, (hidden, cell) = self.lstm(embedding)
         # output: B * T, 2H
         # hidden, cell: num_layers * num_directions, B, H
 
