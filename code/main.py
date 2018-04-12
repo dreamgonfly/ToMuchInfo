@@ -109,7 +109,6 @@ def bind_model(model, config):
         :return:
         """
         # dataset.py에서 작성한 preprocess 함수를 호출하여, 문자열을 벡터로 변환합니다
-        
         reviews, features = preprocessor.preprocess_all(raw_data)
         reviews, features = Variable(reviews), Variable(features)
         if config.use_gpu:
