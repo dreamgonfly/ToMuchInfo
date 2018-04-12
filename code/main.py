@@ -20,8 +20,8 @@ from nsml import DATASET_PATH, HAS_DATASET, GPU_NUM, IS_ON_NSML
 
 from models.WordCNN import WordCNN
 from models.VDCNN import VDCNN
-from models.BiLSTM import BiLSTM
 from models.LSTMClassifier import LSTMClassifier
+from models.CNN_LSTM import CNN_LSTM
 # Random seed
 np.random.seed(0)
 torch.manual_seed(0)
@@ -33,11 +33,11 @@ args.add_argument('--pause', type=int, default=0)
 args.add_argument('--iteration', type=str, default='0')
 
 # User options
-args.add_argument('--model', type=str, default='WordCNN', choices=['WordCNN', 'VDCNN','BiLSTM','LSTMClassifier'])
-args.add_argument('--tokenizer', type=str, default='DummyTokenizer', choices=['JamoTokenizer','DummyTokenizer','TwitterTokenizer'])
+args.add_argument('--model', type=str, default='WordCNN', choices=['WordCNN', 'VDCNN','LSTMClassifier','CNN_LSTM'])
+args.add_argument('--tokenizer', type=str, default='DummyTokenizer', choices=['JamoTokenizer', 'JamoMaskedTokenizer','DummyTokenizer','TwitterTokenizer'])
 args.add_argument('--features', type=str, default='LengthFeatureExtractor')  # LengthFeatureExtractor_MovieActorFeaturesExtractor ...
 args.add_argument('--dictionary', type=str, default='RandomDictionary', choices=['RandomDictionary', 'FasttextDictionary'])
-args.add_argument('--use_gpu', type=bool, default= True)
+args.add_argument('--use_gpu', type=bool, default= False)
 args.add_argument('--output', type=int, default=1)
 args.add_argument('--epochs', type=int, default=10)
 args.add_argument('--batch_size', type=int, default=64)
@@ -58,8 +58,8 @@ logger.info('Arguments: {}'.format(config))
 
 if config.model == 'WordCNN': Model = WordCNN
 elif config.model == 'VDCNN': Model = VDCNN
-elif config.model == 'BiLSTM': Model = BiLSTM
 elif config.model == 'LSTMClassifier': Model = LSTMClassifier
+elif config.model == 'CNN_LSTM': Model = CNN_LSTM
 
 Tokenizer = getattr(tokenizers, config.tokenizer)
 tokenizer = Tokenizer(config)

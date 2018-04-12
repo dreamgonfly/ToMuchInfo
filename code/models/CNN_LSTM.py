@@ -42,7 +42,7 @@ class BatchRNN(nn.Module):
                             bidirectional=bidirectional, bias=False)
         self.num_directions = 2 if bidirectional else 1  # why do I need this?
         self.config = config
-        self.hidden = self.init_hidden()
+        self._hidden = self.init_hidden()
 
 
     def forward(self, x):
