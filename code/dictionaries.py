@@ -3,7 +3,7 @@ from collections import Counter
 import io
 import pickle
 from tokenizers import TwitterTokenizer
-from gensim.models import FastText
+from gensim.models import Word2Vec, FastText
 
 
 class RandomDictionary:
@@ -148,7 +148,7 @@ class FastTextVectorizer:
 
         self.vocab_words, self.word2idx, self.idx2word = self._build_vocabulary(data)
         self.embedding = self.load_vectors()
-        print(self.embedding.shape)
+        print(len(vocab_words))
 
     def indexer(self, word):
         try:
@@ -208,7 +208,58 @@ class FastTextVectorizer:
         self.embedding = np.array(state_dict['embedding'])
 
 
+class Word2VecDictionary:
+    def __init__(self, tokenizer, config):
 
+        self.tokenizer = tokenizer
+        self.vocabulary_size = config.vocabulary_size
+        self.embedding_size = config.embedding_size
+        self.PAD_TOKEN = '<PAD>'
+        self.UNK_TOKEN = '<UNK>'
+        self.vectorizer = None
+
+    def build_dictionary(self, data):
+
+        self.vocab_words, self.word2idx, self.idx2word = self._build_vocabulary(data)
+        self.embedding = None
+
+    def indexer(self, word):
+        try:
+            return self.word2idx[word]
+        except KeyError:
+            return self.word2idx[self.UNK_TOKEN]
+
+    def _build_vocabulary(self, data):
+        reviews = [review for review, label in data]
+        tokenized_reviews = [self.tokenizer.tokenize(review) for review in reviews]
+        tokens = [token for token, tag in tokenized_reviews]
+        tags = [tag for token, tag in tokenized_reviews]
+
+        self.vectorizer = Word2Vec(sentences=tokens,
+                                   )
+        counter = Counter([token for document, label in data for token in self.tokenizer.tokenize(document)])
+        print("Total number of unique tokens:", len(counter))
+        counter = {word:freq for word, freq in counter.most_common(self.vocabulary_size - 2)}  # for pad and unk
+
+        vocab_words = [self.PAD_TOKEN, self.UNK_TOKEN]
+
+        vocab_words += list(sorted(counter.keys()))
+
+        word2idx = {word:idx for idx, word in enumerate(vocab_words)}
+        idx2word = vocab_words # instead of {idx:word for idx, word in enumerate(vocab_words)}
+
+        return vocab_words, word2idx, idx2word
+
+    def state_dict(self):
+        state = {'idx2word': self.idx2word,
+                 'word2idx': self.word2idx,
+                 'vocab_words': self.vocab_words}
+        return state
+
+    def load_state_dict(self, state_dict):
+        self.idx2word = state_dict['idx2word']
+        self.word2idx = state_dict['word2idx']
+        self.vocab_words = state_dict['vocab_words']
 
 if __name__ == '__main__':
 
@@ -219,4 +270,3 @@ if __name__ == '__main__':
 
     dictionary = FasttextDictionary(config=Config)
     dictionary.build_dictionary([])
-
