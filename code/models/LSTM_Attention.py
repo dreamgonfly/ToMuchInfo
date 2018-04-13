@@ -93,3 +93,4 @@ class LSTM_Attention(nn.Module):
         output = self.fc(self.M.view(self.M.size(0), -1)).squeeze()  # B, r, 2H -> resize to B, r*2H -> B, H_f -> Relu -> B, 1
 
         return output, loss_P
+

@@ -6,6 +6,8 @@ from .VDCNN_feat_dropout import VDCNN_feat as VDCNN_feat_dropout
 from .LSTMText import LSTMText
 from .LSTM_Attention import LSTM_Attention
 from .FastText import FastText
+from .TextCNN import TextCNN
+from .RCNN import RCNN
 
 __all__ = ['WordCNN',
            'WordCNN_word',
@@ -15,4 +17,6 @@ __all__ = ['WordCNN',
            'LSTMText',
            'LSTM_Attention',
            'FastText',
+           'TextCNN',
+           'RCNN',
            ]

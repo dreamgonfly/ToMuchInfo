@@ -4,6 +4,7 @@ import io
 import pickle
 from tokenizers import TwitterTokenizer
 from gensim.models import Word2Vec, FastText
+from gensim.models import TfidfModel
 
 
 class RandomDictionary:
@@ -148,7 +149,7 @@ class FastTextVectorizer:
 
         self.vocab_words, self.word2idx, self.idx2word = self._build_vocabulary(data)
         self.embedding = self.load_vectors()
-        print(len(vocab_words))
+        print(len(self.vocab_words))
 
     def indexer(self, word):
         try:
@@ -164,10 +165,17 @@ class FastTextVectorizer:
         tags = [[pos for token, pos in tokenized_list] for tokenized_list in tokenized_reviews]
 
         self.fasttext = FastText(sentences=tokens,
+                                 sg=1,
+                                 window=5,
+                                 negative=10,
+                                 min_n=1,
+                                 max_n=5,
+                                 word_ngrams=1,
                                  size=self.embedding_size,
-                                 max_vocab_size=self.vocabulary_size - 2)
+                                 iter=15,
+                                 )
 
-        vocab_words = self.fasttext.wv.vocab
+        vocab_words = list(self.fasttext.wv.vocab.keys())
         word2idx = {word: idx for idx, word in enumerate(vocab_words)}
         word2idx['<UNK>'] = len(vocab_words)
         word2idx['<PAD>'] = len(vocab_words) + 1
@@ -175,6 +183,9 @@ class FastTextVectorizer:
         idx2word = {idx: word for idx, word in enumerate(vocab_words)}
         idx2word[len(vocab_words)] = '<UNK>'
         idx2word[len(vocab_words) + 1] = '<PAD>'
+        print("word2idx", word2idx['쓰레기'], word2idx['<PAD>'])
+        print("idx2word", idx2word[word2idx['쓰레기']], idx2word[word2idx['<PAD>']])
+        print("vocab_words", vocab_words[0])
 
         return vocab_words, word2idx, idx2word
 
@@ -211,7 +222,7 @@ class FastTextVectorizer:
 class Word2VecDictionary:
     def __init__(self, tokenizer, config):
 
-        self.tokenizer = tokenizer
+        self.tokenizer = TwitterTokenizer(config)
         self.vocabulary_size = config.vocabulary_size
         self.embedding_size = config.embedding_size
         self.PAD_TOKEN = '<PAD>'
@@ -232,21 +243,23 @@ class Word2VecDictionary:
     def _build_vocabulary(self, data):
         reviews = [review for review, label in data]
         tokenized_reviews = [self.tokenizer.tokenize(review) for review in reviews]
-        tokens = [token for token, tag in tokenized_reviews]
-        tags = [tag for token, tag in tokenized_reviews]
+        tokens = [[token for token, pos in tokenized_list] for tokenized_list in tokenized_reviews]
+        tags = [[pos for token, pos in tokenized_list] for tokenized_list in tokenized_reviews]
 
         self.vectorizer = Word2Vec(sentences=tokens,
+                                   size=self.embedding_size,
                                    )
-        counter = Counter([token for document, label in data for token in self.tokenizer.tokenize(document)])
-        print("Total number of unique tokens:", len(counter))
-        counter = {word:freq for word, freq in counter.most_common(self.vocabulary_size - 2)}  # for pad and unk
+        vocab_words = list(self.vectorizer.wv.vocab.keys())
+        word2idx = {word: idx for idx, word in enumerate(vocab_words)}
+        word2idx['<UNK>'] = len(vocab_words)
+        word2idx['<PAD>'] = len(vocab_words) + 1
 
-        vocab_words = [self.PAD_TOKEN, self.UNK_TOKEN]
-
-        vocab_words += list(sorted(counter.keys()))
-
-        word2idx = {word:idx for idx, word in enumerate(vocab_words)}
-        idx2word = vocab_words # instead of {idx:word for idx, word in enumerate(vocab_words)}
+        idx2word = {idx: word for idx, word in enumerate(vocab_words)}
+        idx2word[len(vocab_words)] = '<UNK>'
+        idx2word[len(vocab_words) + 1] = '<PAD>'
+        print("word2idx", word2idx['쓰레기'], word2idx['<PAD>'])
+        print("idx2word", idx2word[word2idx['쓰레기']], idx2word[word2idx['<PAD>']])
+        print("vocab_words", vocab_words[0])
 
         return vocab_words, word2idx, idx2word
 
