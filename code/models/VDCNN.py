@@ -79,7 +79,7 @@ class VDCNN(nn.Module):
 
         vocabulary_size = config.vocabulary_size
 
-        depth = 17 # config.depth  # 29
+        depth = 29 # config.depth  # 29
         embed_size = config.embedding_size # config.embed_size  # 16
         optional_shortcut = True # config.optional_shortcut  # True
         k = 8 # config.k  # 8
@@ -120,13 +120,15 @@ class VDCNN(nn.Module):
         self.conv_layers = nn.Sequential(*conv_layers)
         self.kmax_pooling = KMaxPool(k=k)
 
-        linear_layers = []
-
-        linear_layers.append(nn.Linear(512 * k, 2048))
-        linear_layers.append(nn.Linear(2048, 2048))
-        linear_layers.append(nn.Linear(2048, 1))
-
-        self.linear_layers = nn.Sequential(*linear_layers)
+        self.linear_layers = nn.Sequential(
+            nn.Linear(512 * k, 2048),
+            nn.ReLU(),
+            nn.BatchNorm1d(2048),
+            nn.Linear(2048, 2048),
+            nn.ReLU(),
+            nn.BatchNorm1d(2048),
+            nn.Linear(2048, 1),
+        )
 
     def forward(self, sentences, features):
 
