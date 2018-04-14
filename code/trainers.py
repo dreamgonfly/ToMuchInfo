@@ -57,6 +57,7 @@ class Trainer():
             
             if(initialize):
                 LSUVinit(self.model,review,needed_std = 1.0, std_tol = 0.1, max_attempts = 100, do_orthonorm = False)
+                initialize = False
             self.optimizer.zero_grad()
             self.outputs = self.model(self.inputs, self.features)
             if type(self.outputs) == tuple:
