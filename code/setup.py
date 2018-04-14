@@ -27,6 +27,7 @@ setup(
         'jamo',
         'JPype1-py3',
         'konlpy',
-        'gensim'
+        'gensim',
+        'soynlp',
     ]
 )
