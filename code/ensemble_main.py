@@ -96,7 +96,7 @@ for config_name in ensemble_models:
     ensemble_models[config_name]['preprocessor'] = preprocessor
 
 for config_name in ensemble_models:
-    config = ensemble_models[config_name]
+    config = ensemble_models[config_name]['config']
     preprocessor = ensemble_models[config_name]['preprocessor']
     Model = getattr(models, config.model)
     model = Model(config, n_features=preprocessor.n_features)

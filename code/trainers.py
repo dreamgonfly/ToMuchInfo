@@ -8,7 +8,7 @@ from collections import defaultdict
 
 import nsml
 
-STOP_TRAIN_AFTER = 3
+STOP_TRAIN_AFTER = 4
 
 class Trainer():
     def __init__(self, model, train_dataloader, val_dataloader, criterion, optimizer, lr_schedule, lr_scheduler,
@@ -248,10 +248,12 @@ class EnsembleTrainer():
 
             for config_name in self.ensemble_models:
                 if len(self.val_epoch_losses[config_name]) >= STOP_TRAIN_AFTER and \
-                                self.val_epoch_losses[config_name][-STOP_TRAIN_AFTER] < self.val_epoch_losses[config_name][-2] and \
-                                self.val_epoch_losses[config_name][-2] < self.val_epoch_losses[config_name][-1]:
-                    self.logger.info("Skip", config_name)
+                                self.val_epoch_losses[config_name][-STOP_TRAIN_AFTER] < self.val_epoch_losses[config_name][-3] and \
+                                self.val_epoch_losses[config_name][-3] < self.val_epoch_losses[config_name][-2] and \
+                                self.val_epoch_losses[config_name][-3] < self.val_epoch_losses[config_name][-1]:
+                    self.logger.info("Skip {}".format(config_name))
                     continue
+                self.logger.info("Training {}".format(config_name))
                 model = self.ensemble_models[config_name]['model']
                 criterion = self.ensemble_models[config_name]['criterion']
                 optimizer = self.ensemble_models[config_name]['optimizer']
@@ -269,24 +271,26 @@ class EnsembleTrainer():
                 self.val_epoch_losses[config_name].append(val_epoch_loss)
     #             self.val_epoch_metrics.append(val_epoch_metric)
 
-                config_result_message = ("Config: {config} "
-                           "Epoch: {epoch:<3d} "
-                           "Progress: {progress:<.1%} ({elapsed}) "
-                           "Train Loss: {train_loss:<.6} "
-                           #                              "Train Acc: {train_metric:<.1%} "
-                           "Val Loss: {val_loss:<.6} "
-                           #                              "Val Acc: {val_metric:<.1%} "
-                           "Learning rate: {learning_rate:<.4} ")
+                config_result_message = (
+                    "Config: {config} "
+                    "Epoch: {epoch:<3d} "
+                    "Progress: {progress:<.1%} ({elapsed}) "
+                    "Train Loss: {train_loss:<.6} "
+                    #                              "Train Acc: {train_metric:<.1%} "
+                    "Val Loss: {val_loss:<.6} "
+                    #                              "Val Acc: {val_metric:<.1%} "
+                    "Learning rate: {learning_rate:<.4} ")
 
                 if epoch % self.print_every == 0:
-                    current_lr = self.optimizer.param_groups[0]['lr']
+                    current_lr = optimizer.param_groups[0]['lr']
                     message = config_result_message.format(config=config_name, epoch=epoch, progress=epoch / epochs, train_loss=epoch_loss,
                                                        val_loss=val_epoch_loss, learning_rate=current_lr,
                                                        elapsed=self.elapsed_time())
+                    self.logger.info(message)
 
                     if 'best_loss' not in self.ensemble_models[config_name] \
                             or val_epoch_loss < self.ensemble_models[config_name]['best_loss']:
-                        self.logger.info("Saving the model for", config_name)
+                        # self.logger.info("Saving the model for {}".format(config_name))
                         self.ensemble_models[config_name]['best_loss'] = val_epoch_loss
                         # self.ensemble_models[config_name]['best_model'] = model.state_dict()
 
