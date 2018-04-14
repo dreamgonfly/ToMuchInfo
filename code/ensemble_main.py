@@ -20,6 +20,7 @@ from models_config import MODELS_CONFIG
 
 import nsml
 from nsml import DATASET_PATH, HAS_DATASET, GPU_NUM, IS_ON_NSML
+from LSUV import LSUVinit
 
 INFER_THRESHOLD = 5
 
@@ -216,9 +217,19 @@ if config.mode == 'train':
     logger.info("Making dataset & dataloader Done")
 
     for config_name in ensemble_models:
+        config = ensemble_models[config_name]['config']
         preprocessor = ensemble_models[config_name]['preprocessor']
         model = ensemble_models[config_name]['model']
+        train_dataloader = ensemble_models[config_name]['train_dataloader']
 
+        ## initialize model param w/ LSUV
+        for inputs, features, targets in train_dataloader:
+            if config.use_gpu:
+                inputs = Variable(inputs).cuda()
+            else:
+                inputs = Variable(inputs)
+            LSUVinit(model, inputs, needed_std=1.0, std_tol=0.1, max_attempts=100, do_orthonorm=False)
+            break
 
         if preprocessor.dictionary.embedding is not None:
             embedding_weights = torch.FloatTensor(preprocessor.dictionary.embedding)
@@ -236,7 +247,7 @@ if config.mode == 'train':
         ensemble_models[config_name]['lr_scheduler'] = lr_scheduler
 
     trainer = EnsembleTrainer(ensemble_models, use_gpu=default_config.use_gpu, logger=logger)
-    trainer.run(epochs=config.epochs)
+    trainer.run(epochs=default_config.epochs)
 
 # 로컬 테스트 모드일때 사용합니다
 # 결과가 아래와 같이 나온다면, nsml submit을 통해서 제출할 수 있습니다.

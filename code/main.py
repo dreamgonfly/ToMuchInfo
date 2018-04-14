@@ -168,7 +168,7 @@ if config.mode == 'train':
             inputs = Variable(inputs).cuda()
         else:
             inputs = Variable(inputs)
-            LSUVinit(model,inputs,needed_std = 1.0, std_tol = 0.1, max_attempts = 100, do_orthonorm = False)
+        LSUVinit(model,inputs,needed_std = 1.0, std_tol = 0.1, max_attempts = 100, do_orthonorm = False)
         break
 
 
