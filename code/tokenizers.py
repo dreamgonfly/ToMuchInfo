@@ -8,6 +8,9 @@ class DummyTokenizer:
     def __init__(self, config):
         pass
 
+    def fit(self, data):
+        pass
+
     def tokenize(self, raw_text):
         """Tokenize raw text
 
@@ -29,6 +32,9 @@ class JamoTokenizer:
     def __init__(self, config):
         self.movie_actor = re.compile(r"mv[0-9]*|ac[0-9]*|.")
 
+    def fit(self, data):
+        pass
+
     def tokenize(self, raw_text):
         """
 
@@ -46,6 +52,9 @@ class JamoMaskedTokenizer:
     def __init__(self, config):
         self.mv = re.compile(r'mv[0-9]{2,10}')
         self.ac = re.compile(r'ac[0-9]{2,10}')
+
+    def fit(self, data):
+        pass
 
     def tokenize(self, raw_text):
         """Tokenize text into jamo with actors and movies masked
@@ -70,6 +79,9 @@ class TwitterTokenizer:
         self.twitter = Twitter()
         self.mv = re.compile(r'mv[0-9]{2,10}')
         self.ac = re.compile(r'ac[0-9]{2,10}')
+
+    def fit(self, data):
+        pass
 
     def tokenize(self, raw_text, stem=False):
         """
@@ -104,6 +116,9 @@ class TwitterTokenizer_SH:
         self.tw = Twitter()
         pass
 
+    def fit(self, data):
+        pass
+
     def tokenize(self, raw_text):
         """Noun, Verb, Adjective output 내는 tokenizer
         Args:
@@ -119,10 +134,14 @@ class TwitterTokenizer_SH:
                 output.append(word+'_'+pos)
         return output
 
+
 class MultiTokenizer:
     def __init__(self, config):
         self.tokenizers = [JamoTokenizer, TwitterTokenizer_SH, ]
         self.config = config
+
+    def fit(self, data):
+        pass
 
     def tokenize(self, raw_text):
         output = []
@@ -131,6 +150,14 @@ class MultiTokenizer:
             output += (tokenizer(self.config).tokenize(raw_text))
         return output
 
+
+class SoyNLPTokenizer:
+    def __init__(self, config):
+        self.tokenizer = None
+        self.scores = None
+
+    def fit(self, data):
+        reviews = [review for review, label in data]
 if __name__ == '__main__':
 
     tokenizer = JamoMaskedTokenizer(None)

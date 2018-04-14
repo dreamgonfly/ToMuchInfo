@@ -149,10 +149,9 @@ if config.mode == 'train':
     train_data, val_data = load_data(DATASET_PATH, val_size=0.1)
 
     logger.info("Building preprocessor...")
+    preprocessor.dictionary.build_dictionary(train_data)
     for feature_name, feature_extractor in preprocessor.feature_extractors:
         feature_extractor.fit(train_data)
-
-    preprocessor.dictionary.build_dictionary(train_data)
 
     logger.info("Making dataset & dataloader...")
     train_dataset = MovieReviewDataset(train_data, preprocessor, sort=config.sort_dataset, min_length=config.min_length, max_length=config.max_length)
@@ -198,7 +197,7 @@ if config.mode == 'train':
 
     criterion = nn.MSELoss(size_average=False)
     trainable_params = [p for p in model.parameters() if p.requires_grad]
-    optimizer = optim.Adam(params=trainable_params, lr=config.learning_rate)
+    optimizer = optim.Adam(filter(lambda p: p.requires_grad, model.parameters()), lr=config.learning_rate)
     lr_scheduler = optim.lr_scheduler.StepLR(optimizer, step_size=2, gamma=0.8)  # .ReduceLROnPlateau(optimizer, factor=0.7, patience=5, min_lr=0.00005)
 
     trainer = Trainer(model, train_dataloader, val_dataloader, criterion=criterion, optimizer=optimizer,
