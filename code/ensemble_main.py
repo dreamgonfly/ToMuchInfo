@@ -147,7 +147,7 @@ def bind_model(model, config):
 
             # INFER_THRESHOLD보다 높은 loss를 가진 모델은 제외
             if ensemble_models[config_name]['best_loss'] > INFER_THRESHOLD:
-                pass
+                continue
             preprocessor = ensemble_models[config_name]['preprocessor']
             model = ensemble_models[config_name]['model']
             reviews, features = preprocessor.preprocess_all(raw_data)
@@ -215,7 +215,7 @@ if config.mode == 'train':
             train_labels = [label for train, label in train_data]
             class_sample_count = np.array([len(np.where(train_labels == t)[0]) for t in
                                            range(1, 11)])  # dataset has 10 class-1 samples, 1 class-2 samples, etc.
-            weights = 1 / torch.FloatTensor(class_sample_count) # torch.FloatTensor([1, 1, 1, 1, 1, 1, 1, 1, 1, 1 / 6])  #
+            weights = torch.FloatTensor([1, 1, 1, 1, 1, 1, 1, 1, 1, 1 / 6]) # 1 / torch.FloatTensor(class_sample_count) #
             weights = weights.double().cuda()
             sampler = torch.utils.data.sampler.WeightedRandomSampler(weights, config.batch_size)
             train_dataloader = torch.utils.data.DataLoader(dataset=train_dataset, batch_size=config.batch_size,
