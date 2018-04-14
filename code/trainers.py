@@ -203,9 +203,9 @@ class EnsembleTrainer():
                 inputs, features, targets = Variable(inputs), Variable(features), Variable(targets)
 
             optimizer.zero_grad()
-            if hasattr(self.model, 'init_hidden'):
-                self.model.batch_size = len(inputs)
-                self.model.hidden = self.model.init_hidden()
+            if hasattr(model, 'init_hidden'):
+                model.batch_size = len(inputs)
+                model.hidden = model.init_hidden()
             outputs = model(inputs, features)
             if type(outputs) == tuple:
                 batch_loss = criterion(outputs[0], targets) + outputs[1]
@@ -231,9 +231,9 @@ class EnsembleTrainer():
             else:
                 val_inputs, val_features, val_targets = Variable(val_inputs), Variable(val_features), Variable(val_targets)
 
-            if hasattr(self.model, 'init_hidden'):
-                self.model.batch_size = len(val_inputs)
-                self.model.hidden = self.model.init_hidden()
+            if hasattr(model, 'init_hidden'):
+                model.batch_size = len(val_inputs)
+                model.hidden = model.init_hidden()
             val_outputs = model(val_inputs, val_features)
             if type(val_outputs) == tuple:
                 val_batch_loss = criterion(val_outputs[0], val_targets) + val_outputs[1]

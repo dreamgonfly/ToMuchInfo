@@ -73,13 +73,13 @@ class ResidualBlock(nn.Module):
         return x
 
 
-class VDCNN(nn.Module):
+class VDCNN_29(nn.Module):
     def __init__(self, config, n_features):
-        super(VDCNN, self).__init__()
+        super(VDCNN_29, self).__init__()
 
         vocabulary_size = config.vocabulary_size
 
-        depth = 17 # config.depth  # 29
+        depth = 29 # config.depth  # 29
         embed_size = config.embedding_size # config.embed_size  # 16
         optional_shortcut = True # config.optional_shortcut  # True
         k = 8 # config.k  # 8

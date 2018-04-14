@@ -22,7 +22,7 @@ import nsml
 from nsml import DATASET_PATH, HAS_DATASET, GPU_NUM, IS_ON_NSML
 from LSUV import LSUVinit
 
-INFER_THRESHOLD = 5
+INFER_THRESHOLD = 4.5
 
 # Random seed
 np.random.seed(0)
@@ -187,8 +187,8 @@ if config.mode == 'train':
     # 데이터를 로드합니다.
     logger.info("Loading data...")
     train_data, val_data = load_data(DATASET_PATH, val_size=0.1)
-    print('using only 1000 samples for test')
-    train_data, val_data = train_data[:1000], val_data[:1000] # For test
+    # print('using only 1000 samples for test')
+    # train_data, val_data = train_data[:1000], val_data[:1000] # For test
 
     logger.info("Building preprocessor...")
     for config_name in ensemble_models:
@@ -196,6 +196,7 @@ if config.mode == 'train':
         for feature_name, feature_extractor in preprocessor.feature_extractors:
             feature_extractor.fit(train_data)
 
+        preprocessor.tokenizer.fit(train_data)
         preprocessor.dictionary.build_dictionary(train_data)
 
     unique_dataset_settings = {}
