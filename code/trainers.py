@@ -4,7 +4,7 @@ from datetime import datetime
 from tqdm import tqdm
 import torch
 from torch.autograd import Variable
-
+from LSUV import LSUVinit
 import nsml
 
 
@@ -46,13 +46,17 @@ class Trainer():
 
         self.batch_losses = []
 #         self.batch_metrics = []
+        # flag for LSUV initialization
+        initialize = True
         for inputs, features, targets in tqdm(self.train_dataloader):
-
+            
             if self.use_gpu:
                 self.inputs, self.features, self.targets = Variable(inputs.cuda()), Variable(features.cuda()), Variable(targets.cuda())
             else:
                 self.inputs, self.features, self.targets = Variable(inputs), Variable(features), Variable(targets)
-
+            
+            if(initialize):
+                LSUVinit(self.model,review,needed_std = 1.0, std_tol = 0.1, max_attempts = 100, do_orthonorm = False)
             self.optimizer.zero_grad()
             self.outputs = self.model(self.inputs, self.features)
             if type(self.outputs) == tuple:
