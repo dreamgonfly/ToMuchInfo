@@ -13,12 +13,13 @@ class WordCNN(nn.Module):
 
         self.embedding = nn.Embedding(vocabulary_size, embedding_size)
 
-        convs = [nn.Conv1d(in_channels=embedding_size, out_channels=64, kernel_size=kernel_size) for kernel_size in
+        convs = [nn.Conv1d(in_channels=embedding_size, out_channels=100, kernel_size=kernel_size) for kernel_size in
                  kernel_sizes]
         self.conv_modules = nn.ModuleList(convs)
         self.tanh = nn.Tanh()
+        self.relu = nn.ReLU(inplace=True)
         self.dropout = nn.Dropout()
-        self.linear = nn.Linear(in_features=192, out_features=1)
+        self.linear = nn.Linear(in_features=300, out_features=1)
 
     def forward(self, reviews, features):
 
@@ -36,3 +37,6 @@ class WordCNN(nn.Module):
         logits = self.linear(features_regularized)
         predictions = logits.squeeze()
         return predictions
+
+
+

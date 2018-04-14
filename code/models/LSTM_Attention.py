@@ -66,6 +66,7 @@ class LSTM_Attention(nn.Module):
         inputs_lengths: length of each sentences
         """
         # inputs_lengths = (reviews != PAD_IDX).sum(1).data.cpu().numpy().tolist()
+
         embedding = self.embedding(reviews)  # B, T, V  --> B, T, D
 
         # 패딩된 문장을 패킹(패딩은 연산 안들어가도록)
@@ -92,3 +93,4 @@ class LSTM_Attention(nn.Module):
         output = self.fc(self.M.view(self.M.size(0), -1)).squeeze()  # B, r, 2H -> resize to B, r*2H -> B, H_f -> Relu -> B, 1
 
         return output, loss_P
+

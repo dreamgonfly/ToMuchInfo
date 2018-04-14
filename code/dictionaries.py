@@ -3,7 +3,8 @@ from collections import Counter
 import io
 import pickle
 from tokenizers import TwitterTokenizer
-from gensim.models import FastText
+from gensim.models import Word2Vec, FastText
+from gensim.models import TfidfModel
 
 
 class RandomDictionary:
@@ -148,7 +149,7 @@ class FastTextVectorizer:
 
         self.vocab_words, self.word2idx, self.idx2word = self._build_vocabulary(data)
         self.embedding = self.load_vectors()
-        print(self.embedding.shape)
+        print(len(self.vocab_words))
 
     def indexer(self, word):
         try:
@@ -164,10 +165,17 @@ class FastTextVectorizer:
         tags = [[pos for token, pos in tokenized_list] for tokenized_list in tokenized_reviews]
 
         self.fasttext = FastText(sentences=tokens,
+                                 sg=1,
+                                 window=5,
+                                 negative=10,
+                                 min_n=1,
+                                 max_n=5,
+                                 word_ngrams=1,
                                  size=self.embedding_size,
-                                 max_vocab_size=self.vocabulary_size - 2)
+                                 iter=15,
+                                 )
 
-        vocab_words = self.fasttext.wv.vocab
+        vocab_words = list(self.fasttext.wv.vocab.keys())
         word2idx = {word: idx for idx, word in enumerate(vocab_words)}
         word2idx['<UNK>'] = len(vocab_words)
         word2idx['<PAD>'] = len(vocab_words) + 1
@@ -175,6 +183,9 @@ class FastTextVectorizer:
         idx2word = {idx: word for idx, word in enumerate(vocab_words)}
         idx2word[len(vocab_words)] = '<UNK>'
         idx2word[len(vocab_words) + 1] = '<PAD>'
+        print("word2idx", word2idx['쓰레기'], word2idx['<PAD>'])
+        print("idx2word", idx2word[word2idx['쓰레기']], idx2word[word2idx['<PAD>']])
+        print("vocab_words", vocab_words[0])
 
         return vocab_words, word2idx, idx2word
 
@@ -208,7 +219,60 @@ class FastTextVectorizer:
         self.embedding = np.array(state_dict['embedding'])
 
 
+class Word2VecDictionary:
+    def __init__(self, tokenizer, config):
 
+        self.tokenizer = TwitterTokenizer(config)
+        self.vocabulary_size = config.vocabulary_size
+        self.embedding_size = config.embedding_size
+        self.PAD_TOKEN = '<PAD>'
+        self.UNK_TOKEN = '<UNK>'
+        self.vectorizer = None
+
+    def build_dictionary(self, data):
+
+        self.vocab_words, self.word2idx, self.idx2word = self._build_vocabulary(data)
+        self.embedding = None
+
+    def indexer(self, word):
+        try:
+            return self.word2idx[word]
+        except KeyError:
+            return self.word2idx[self.UNK_TOKEN]
+
+    def _build_vocabulary(self, data):
+        reviews = [review for review, label in data]
+        tokenized_reviews = [self.tokenizer.tokenize(review) for review in reviews]
+        tokens = [[token for token, pos in tokenized_list] for tokenized_list in tokenized_reviews]
+        tags = [[pos for token, pos in tokenized_list] for tokenized_list in tokenized_reviews]
+
+        self.vectorizer = Word2Vec(sentences=tokens,
+                                   size=self.embedding_size,
+                                   )
+        vocab_words = list(self.vectorizer.wv.vocab.keys())
+        word2idx = {word: idx for idx, word in enumerate(vocab_words)}
+        word2idx['<UNK>'] = len(vocab_words)
+        word2idx['<PAD>'] = len(vocab_words) + 1
+
+        idx2word = {idx: word for idx, word in enumerate(vocab_words)}
+        idx2word[len(vocab_words)] = '<UNK>'
+        idx2word[len(vocab_words) + 1] = '<PAD>'
+        print("word2idx", word2idx['쓰레기'], word2idx['<PAD>'])
+        print("idx2word", idx2word[word2idx['쓰레기']], idx2word[word2idx['<PAD>']])
+        print("vocab_words", vocab_words[0])
+
+        return vocab_words, word2idx, idx2word
+
+    def state_dict(self):
+        state = {'idx2word': self.idx2word,
+                 'word2idx': self.word2idx,
+                 'vocab_words': self.vocab_words}
+        return state
+
+    def load_state_dict(self, state_dict):
+        self.idx2word = state_dict['idx2word']
+        self.word2idx = state_dict['word2idx']
+        self.vocab_words = state_dict['vocab_words']
 
 if __name__ == '__main__':
 
@@ -219,4 +283,3 @@ if __name__ == '__main__':
 
     dictionary = FasttextDictionary(config=Config)
     dictionary.build_dictionary([])
-

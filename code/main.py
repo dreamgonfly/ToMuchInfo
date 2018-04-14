@@ -81,7 +81,7 @@ if config.use_gpu:
     model = model.cuda()
 
 if not HAS_DATASET and not IS_ON_NSML:  # It is not running on nsml
-    DATASET_PATH = 'data/movie_review_phase1/' # 'data/movie_review_phase1/'
+    DATASET_PATH = 'data/small/' # 'data/movie_review_phase1/'
 
 # DONOTCHANGE: They are reserved for nsml
 # This is for nsml leaderboard
@@ -109,7 +109,7 @@ def bind_model(model, config):
         :return:
         """
         # dataset.py에서 작성한 preprocess 함수를 호출하여, 문자열을 벡터로 변환합니다
-        
+
         reviews, features = preprocessor.preprocess_all(raw_data)
         reviews, features = Variable(reviews), Variable(features)
         if config.use_gpu:
@@ -160,7 +160,7 @@ if config.mode == 'train':
         embedding_weights = torch.FloatTensor(dictionary.embedding)
         if config.use_gpu:
             embedding_weights = embedding_weights.cuda()
-        model.embedding.weight = nn.Parameter(embedding_weights, requires_grad=False)
+        model.embedding.weight = nn.Parameter(embedding_weights, requires_grad=True)
 
     criterion = nn.MSELoss(size_average=False)
     trainable_params = [p for p in model.parameters() if p.requires_grad]
