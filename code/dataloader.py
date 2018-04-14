@@ -95,16 +95,19 @@ class Preprocessor:
         for feature_name, feature_extractor in self.feature_extractors:
             features_state_dict[feature_name] = feature_extractor.state_dict()
 
+        tokenizer_dict = self.tokenizer.state_dict()
         dictionary_dict = self.dictionary.state_dict()
 
         return {'features_state': features_state_dict,
-                'dictionary_state': dictionary_dict}
+                'dictionary_state': dictionary_dict,
+                'tokenizer_state': tokenizer_dict,
+                }
 
     def load_state_dict(self, state_dict):
 
         for feature_name, feature_extractor in self.feature_extractors:
             feature_extractor.load_state_dict(state_dict['features_state'][feature_name])
-
+        self.tokenizer.load_state_dict(state_dict['tokenizer_state'])
         self.dictionary.load_state_dict(state_dict['dictionary_state'])
 
 
