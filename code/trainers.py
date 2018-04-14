@@ -4,9 +4,11 @@ from datetime import datetime
 from tqdm import tqdm
 import torch
 from torch.autograd import Variable
+from collections import defaultdict
 
 import nsml
 
+STOP_TRAIN_AFTER = 4
 
 class Trainer():
     def __init__(self, model, train_dataloader, val_dataloader, criterion, optimizer, lr_schedule, lr_scheduler,
@@ -125,6 +127,186 @@ class Trainer():
             if epoch % self.save_every == 0:
                 self.logger.info("Saving the model...")
                 self.save_model()
+
+                # DONOTCHANGE (You can decide how often you want to save the model)
+                nsml.save(epoch)
+
+#     def accuracy(self, outputs, labels):
+
+#         maximum, argmax = outputs.max(dim=1)
+#         corrects = argmax == labels  # ByteTensor
+#         n_corrects = corrects.float().sum()  # FloatTensor
+#         return n_corrects
+
+    def elapsed_time(self):
+        now = datetime.now()
+        elapsed = now - self.start_time
+        return str(elapsed)
+
+    def save_model(self):
+        base_dir = dirname(abspath(__file__))
+        checkpoint_dir = join(base_dir, 'checkpoints')
+        if not exists(checkpoint_dir):
+            os.mkdir(checkpoint_dir)
+        model_name = self.model.__class__.__name__
+        base_filename = '{model_name}-{start_time}-{epoch}.pth'
+        checkpoint_filename = base_filename.format(model_name=model_name, start_time=self.start_time, epoch=self.epoch)
+        checkpoint_filepath = join(checkpoint_dir, checkpoint_filename)
+        torch.save(self.model.state_dict(), checkpoint_filepath)
+        self.last_checkpoint_filepath = checkpoint_filepath
+        if max(self.val_epoch_losses) == self.val_epoch_losses[-1]:  # if last run is the best
+            self.best_checkpoint_filepath = checkpoint_filepath
+
+
+class EnsembleTrainer():
+    def __init__(self, ensemble_models, use_gpu=False, print_every=1, save_every=1, logger=None):
+
+        self.ensemble_models = ensemble_models
+
+        self.print_every = print_every
+        self.save_every = save_every
+
+        self.epoch = 0
+        self.epoch_losses = defaultdict(list)
+#         self.epoch_metrics = []
+        self.val_epoch_losses = defaultdict(list)
+#         self.val_epoch_metrics = []
+        self.use_gpu = use_gpu
+        self.logger = logger
+
+        self.base_message = ("Epoch: {epoch:<3d} "
+                             "Progress: {progress:<.1%} ({elapsed}) "
+                             "Train Loss: {train_loss:<.6} "
+#                              "Train Acc: {train_metric:<.1%} "
+                             "Val Loss: {val_loss:<.6} "
+#                              "Val Acc: {val_metric:<.1%} "
+                             "Learning rate: {learning_rate:<.4} ")
+
+        self.start_time = datetime.now()
+
+    def train(self, model, criterion, optimizer, train_dataloader, val_dataloader, ):
+        model.train()
+
+        batch_losses = []
+#         self.batch_metrics = []
+        for inputs, features, targets in tqdm(train_dataloader):
+
+            if self.use_gpu:
+                inputs, features, targets = Variable(inputs.cuda()), Variable(features.cuda()), Variable(targets.cuda())
+            else:
+                inputs, features, targets = Variable(inputs), Variable(features), Variable(targets)
+
+            optimizer.zero_grad()
+            outputs = model(inputs, features)
+            if type(outputs) == tuple:
+                batch_loss = criterion(outputs[0], targets) + outputs[1]
+            else:
+                batch_loss = criterion(outputs, targets)
+#             batch_metric = self.accuracy(self.outputs, self.targets)
+
+            batch_loss.backward()
+            optimizer.step()
+
+            batch_losses.append(batch_loss.data)
+#             self.batch_metrics.append(batch_metric.data)
+            if self.epoch == 0:  # for testing
+                break
+
+        # validation
+        model.eval()
+        val_batch_losses = []
+#         self.val_batch_metrics = []
+        for val_inputs, val_features, val_targets in val_dataloader:
+            if self.use_gpu:
+                val_inputs, val_features, val_targets = Variable(val_inputs.cuda()), Variable(val_features.cuda()), Variable(val_targets.cuda())
+            else:
+                val_inputs, val_features, val_targets = Variable(val_inputs), Variable(val_features), Variable(val_targets)
+
+            val_outputs = model(val_inputs, val_features)
+            if type(val_outputs) == tuple:
+                val_batch_loss = criterion(val_outputs[0], val_targets) + val_outputs[1]
+            else:
+                val_batch_loss = criterion(val_outputs, val_targets)
+#             val_batch_metric = self.accuracy(self.val_outputs, self.val_targets)
+            val_batch_losses.append(val_batch_loss.data)
+#             self.val_batch_metrics.append(val_batch_metric.data)
+
+        train_data_size = len(train_dataloader.dataset)
+        epoch_loss = torch.cat(batch_losses).sum() / train_data_size
+#         epoch_metric = torch.cat(self.batch_metrics).sum() / train_data_size
+
+        val_data_size = len(val_dataloader.dataset)
+        val_epoch_loss = torch.cat(val_batch_losses).sum() / val_data_size
+#         val_epoch_metric = torch.cat(self.val_batch_metrics).sum() / val_data_size
+
+        return epoch_loss, val_epoch_loss
+
+    def run(self, epochs=10):
+
+        for epoch in range(self.epoch, epochs + 1):
+            self.epoch = epoch
+
+            for config_name in self.ensemble_models:
+                if len(self.val_epoch_losses[config_name]) >= STOP_TRAIN_AFTER and \
+                                self.val_epoch_losses[config_name][-STOP_TRAIN_AFTER] < self.val_epoch_losses[config_name][-3] and \
+                                self.val_epoch_losses[config_name][-3] < self.val_epoch_losses[config_name][-2] and \
+                                self.val_epoch_losses[config_name][-3] < self.val_epoch_losses[config_name][-1]:
+                    self.logger.info("Skip {}".format(config_name))
+                    continue
+                self.logger.info("Training {}".format(config_name))
+                model = self.ensemble_models[config_name]['model']
+                criterion = self.ensemble_models[config_name]['criterion']
+                optimizer = self.ensemble_models[config_name]['optimizer']
+                lr_schedule = self.ensemble_models[config_name]['config'].lr_schedule
+                lr_scheduler = self.ensemble_models[config_name]['lr_scheduler']
+                train_dataloader = self.ensemble_models[config_name]['train_dataloader']
+                val_dataloader = self.ensemble_models[config_name]['val_dataloader']
+
+                epoch_loss, val_epoch_loss = self.train(model, criterion, optimizer, train_dataloader, val_dataloader, )
+                if lr_schedule:
+                    lr_scheduler.step()
+
+                self.epoch_losses[config_name].append(epoch_loss)
+    #             self.epoch_metrics.append(epoch_metric)
+                self.val_epoch_losses[config_name].append(val_epoch_loss)
+    #             self.val_epoch_metrics.append(val_epoch_metric)
+
+                config_result_message = (
+                    "Config: {config} "
+                    "Epoch: {epoch:<3d} "
+                    "Progress: {progress:<.1%} ({elapsed}) "
+                    "Train Loss: {train_loss:<.6} "
+                    #                              "Train Acc: {train_metric:<.1%} "
+                    "Val Loss: {val_loss:<.6} "
+                    #                              "Val Acc: {val_metric:<.1%} "
+                    "Learning rate: {learning_rate:<.4} ")
+
+                if epoch % self.print_every == 0:
+                    current_lr = optimizer.param_groups[0]['lr']
+                    message = config_result_message.format(config=config_name, epoch=epoch, progress=epoch / epochs, train_loss=epoch_loss,
+                                                       val_loss=val_epoch_loss, learning_rate=current_lr,
+                                                       elapsed=self.elapsed_time())
+                    self.logger.info(message)
+
+                    if 'best_loss' not in self.ensemble_models[config_name] \
+                            or val_epoch_loss < self.ensemble_models[config_name]['best_loss']:
+                        # self.logger.info("Saving the model for {}".format(config_name))
+                        self.ensemble_models[config_name]['best_loss'] = val_epoch_loss
+                        # self.ensemble_models[config_name]['best_model'] = model.state_dict()
+
+            # if epoch % self.print_every == 0:
+            #     current_lr = self.optimizer.param_groups[0]['lr']
+            #     message = self.base_message.format(epoch=epoch, progress=epoch / epochs, train_loss=epoch_loss,
+            #                                        val_loss=val_epoch_loss,
+            #                                        learning_rate=current_lr,
+            #                                        elapsed=self.elapsed_time())
+            #     self.logger.info(message)
+            #     nsml.report(summary=True, scope=locals(), epoch=epoch, epoch_total=epochs,
+            #                 train__loss=epoch_loss, val__loss=val_epoch_loss, step=epoch)
+
+            if epoch % self.save_every == 0:
+                # self.logger.info("Saving the model...")
+                # self.save_model()
 
                 # DONOTCHANGE (You can decide how often you want to save the model)
                 nsml.save(epoch)
