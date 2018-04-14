@@ -147,7 +147,7 @@ def bind_model(model, config):
 
             # INFER_THRESHOLD보다 높은 loss를 가진 모델은 제외
             if ensemble_models[config_name]['best_loss'] > INFER_THRESHOLD:
-                pass
+                continue
             preprocessor = ensemble_models[config_name]['preprocessor']
             model = ensemble_models[config_name]['model']
             reviews, features = preprocessor.preprocess_all(raw_data)
