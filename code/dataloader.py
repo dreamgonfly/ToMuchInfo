@@ -56,7 +56,7 @@ class Preprocessor:
         """
 
         normalized_text = self.normalizer.normalize(raw_text)
-        tokenized_text = self.tokenizer.tokenize(normalized_text )
+        tokenized_text = self.tokenizer.tokenize(normalized_text)
         
         features_extracted = tuple()
         for feature_name, feature_extractor in self.feature_extractors:
@@ -111,8 +111,7 @@ class Preprocessor:
 class MovieReviewDataset(Dataset):
     def __init__(self, data, preprocessor, sort=False, min_length=None, max_length=None):
 
-        global PAD_IDX
-        PAD_IDX = PAD_IDX # dictionary.indexer(dictionary.PAD_TOKEN)
+        PAD_IDX = preprocessor.dictionary.indexer(preprocessor.dictionary.PAD_TOKEN)
 
         data_deleted = [(review, label) for review, label in data if irony_deleter(review, label)]
         self.data = [(preprocessor.preprocess(review), label) for review, label in data_deleted]
