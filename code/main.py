@@ -16,6 +16,7 @@ import dictionaries
 from dataloader import load_data, collate_fn, Preprocessor, MovieReviewDataset
 from trainers import Trainer
 import utils
+from LSUV import LSUVinit
 
 import nsml
 from nsml import DATASET_PATH, HAS_DATASET, GPU_NUM, IS_ON_NSML
@@ -160,6 +161,16 @@ if config.mode == 'train':
                               num_workers=2)
     val_dataloader = DataLoader(dataset=val_dataset, batch_size=config.batch_size, shuffle=True,
                                   collate_fn=collate_fn, num_workers=2)
+
+    ## initialize model param w/ LSUV
+    for inputs, features, targets in train_dataloader:
+        if(config.use_gpu):
+            inputs = Variable(inputs).cuda()
+        else:
+            inputs = Variable(inputs)
+            LSUVinit(model,inputs,needed_std = 1.0, std_tol = 0.1, max_attempts = 100, do_orthonorm = False)
+        break
+
 
     if preprocessor.dictionary.embedding is not None:
         embedding_weights = torch.FloatTensor(dictionary.embedding)
