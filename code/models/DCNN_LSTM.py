@@ -35,6 +35,7 @@ class DCNN_LSTM(nn.Module):
         self.dropout = nn.Dropout()
         self.lstm = nn.LSTM(input_size=100*len(kernel_sizes),hidden_size =128,bidirectional=True)
         self.config = config
+        self.B1 = SequenceWise(nn.BatchNorm1d(100*len(self.kernel_sizes)))
 
         self.batch_size = config.batch_size
         self.hidden = self.init_hidden()
@@ -71,7 +72,7 @@ class DCNN_LSTM(nn.Module):
 
 
         #batch_norm
-        features = SequenceWise(nn.BatchNorm1d(100*len(self.kernel_sizes)))(features)
+        features = self.B1(features)
 
         # now LSTM
         features ,self.hidden = self.lstm(features,self.hidden)
