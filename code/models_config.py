@@ -14,6 +14,7 @@ MODELS_CONFIG = {
         'normalizer': 'BasicNormalizer',
         'tokenizer': 'JamoTokenizer',
         'dictionary': 'RandomDictionary',
+        'vocabulary_size': 100000,
         'shuffle_dataset': True,
         'lr_schedule': True,
         'learning_rate': 0.001,

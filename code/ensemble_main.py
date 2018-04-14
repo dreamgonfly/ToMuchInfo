@@ -74,7 +74,7 @@ for config_name in MODELS_CONFIG:
     for argument in MODELS_CONFIG[config_name]:
         setattr(config, argument, MODELS_CONFIG[config_name][argument])
     ensemble_models[config_name]['config'] = config
-    logger.info('Config {config_name}: {config}'.format(config_name=config_name, config=config))
+    logger.info('Config {config_name}: {config}'.format(config_name=config_name, config=MODELS_CONFIG[config_name]))
 
 for config_name in ensemble_models:
     config = ensemble_models[config_name]['config']
@@ -102,10 +102,10 @@ for config_name in ensemble_models:
     preprocessor = ensemble_models[config_name]['preprocessor']
     Model = getattr(models, config.model)
     model = Model(config, n_features=preprocessor.n_features)
-    if config.use_gpu:
+    if default_config.use_gpu:
         model = model.cuda()
     ensemble_models[config_name]['model'] = model
-    print("Number of features of {config_name} : {n_features}".format(config_name=config_name,
+    logger.info("Number of features of {config_name} : {n_features}".format(config_name=config_name,
                                                                       n_features=preprocessor.n_features))
 if not HAS_DATASET and not IS_ON_NSML:  # It is not running on nsml
     DATASET_PATH = 'data/small/' # 'data/movie_review_phase1/'
@@ -117,7 +117,8 @@ def bind_model(model, config):
     def save(filename, *args):
         checkpoint = {
             'model': {config_name:ensemble_models[config_name]['model'].state_dict() for config_name in ensemble_models},
-            'preprocessor': {config_name:ensemble_models[config_name]['preprocessor'].state_dict() for config_name in ensemble_models}
+            'preprocessor': {config_name:ensemble_models[config_name]['preprocessor'].state_dict() for config_name in ensemble_models},
+            'best_losses': {config_name: ensemble_models[config_name]['best_loss'] for config_name in ensemble_models}
         }
         torch.save(checkpoint, filename)
 
@@ -130,6 +131,7 @@ def bind_model(model, config):
 
             model.load_state_dict(checkpoint['model'][config_name])
             preprocessor.load_state_dict(checkpoint['preprocessor'][config_name])
+            ensemble_models[config_name]['best_loss'] = checkpoint['best_losses'][config_name]
         print('Checkpoint loaded')
 
     def infer(raw_data, **kwargs):
@@ -145,7 +147,7 @@ def bind_model(model, config):
 
             # INFER_THRESHOLD보다 높은 loss를 가진 모델은 제외
             if ensemble_models[config_name]['best_loss'] > INFER_THRESHOLD:
-                continue
+                pass
             preprocessor = ensemble_models[config_name]['preprocessor']
             model = ensemble_models[config_name]['model']
             reviews, features = preprocessor.preprocess_all(raw_data)
@@ -185,6 +187,8 @@ if config.mode == 'train':
     # 데이터를 로드합니다.
     logger.info("Loading data...")
     train_data, val_data = load_data(DATASET_PATH, val_size=0.1)
+    print('using only 1000 samples for test')
+    train_data, val_data = train_data[:1000], val_data[:1000] # For test
 
     logger.info("Building preprocessor...")
     for config_name in ensemble_models:
@@ -211,8 +215,8 @@ if config.mode == 'train':
             train_labels = [label for train, label in train_data]
             class_sample_count = np.array([len(np.where(train_labels == t)[0]) for t in
                                            range(1, 11)])  # dataset has 10 class-1 samples, 1 class-2 samples, etc.
-            weights = torch.FloatTensor([1, 1, 1, 1, 1, 1, 1, 1, 1, 1 / 6])  # 1 / torch.FloatTensor(class_sample_count)
-            weights = weights.double()
+            weights = 1 / torch.FloatTensor(class_sample_count) # torch.FloatTensor([1, 1, 1, 1, 1, 1, 1, 1, 1, 1 / 6])  #
+            weights = weights.double().cuda()
             sampler = torch.utils.data.sampler.WeightedRandomSampler(weights, config.batch_size)
             train_dataloader = torch.utils.data.DataLoader(dataset=train_dataset, batch_size=config.batch_size,
                                                            shuffle=config.shuffle_dataset, collate_fn=collate_fn,
@@ -237,11 +241,11 @@ if config.mode == 'train':
 
         ## initialize model param w/ LSUV
         for inputs, features, targets in train_dataloader:
-            if config.use_gpu:
+            if default_config.use_gpu:
                 inputs = Variable(inputs).cuda()
             else:
                 inputs = Variable(inputs)
-            LSUVinit(model, inputs, needed_std=1.0, std_tol=0.1, max_attempts=100, do_orthonorm=False)
+            LSUVinit(model, inputs, needed_std=1.0, std_tol=0.1, max_attempts=100, do_orthonorm=False, cuda=default_config.use_gpu)
             break
 
         if preprocessor.dictionary.embedding is not None:

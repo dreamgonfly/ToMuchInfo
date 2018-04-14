@@ -291,11 +291,13 @@ class EnsembleTrainer():
                                                        elapsed=self.elapsed_time())
                     self.logger.info(message)
 
-                    if 'best_loss' not in self.ensemble_models[config_name] \
-                            or val_epoch_loss < self.ensemble_models[config_name]['best_loss']:
-                        # self.logger.info("Saving the model for {}".format(config_name))
-                        self.ensemble_models[config_name]['best_loss'] = val_epoch_loss
-                        # self.ensemble_models[config_name]['best_model'] = model.state_dict()
+                if 'best_loss' not in self.ensemble_models[config_name] \
+                        or val_epoch_loss < self.ensemble_models[config_name]['best_loss']:
+                    # self.logger.info("Saving the model for {}".format(config_name))
+                    self.ensemble_models[config_name]['best_loss'] = val_epoch_loss
+                    # self.ensemble_models[config_name]['best_model'] = model.state_dict()
+
+                self.logger.info('best_loss {}'.format(self.ensemble_models[config_name]['best_loss']))
 
             # if epoch % self.print_every == 0:
             #     current_lr = self.optimizer.param_groups[0]['lr']
