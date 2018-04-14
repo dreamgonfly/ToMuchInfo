@@ -172,7 +172,7 @@ class FastTextVectorizer:
                                  max_n=5,
                                  word_ngrams=1,
                                  size=self.embedding_size,
-                                 iter=15,
+                                 iter=20,
                                  )
 
         vocab_words = list(self.fasttext.wv.vocab.keys())
@@ -257,9 +257,7 @@ class Word2VecDictionary:
         idx2word = {idx: word for idx, word in enumerate(vocab_words)}
         idx2word[len(vocab_words)] = '<UNK>'
         idx2word[len(vocab_words) + 1] = '<PAD>'
-        print("word2idx", word2idx['쓰레기'], word2idx['<PAD>'])
-        print("idx2word", idx2word[word2idx['쓰레기']], idx2word[word2idx['<PAD>']])
-        print("vocab_words", vocab_words[0])
+
 
         return vocab_words, word2idx, idx2word
 

@@ -20,6 +20,10 @@ import utils
 import nsml
 from nsml import DATASET_PATH, HAS_DATASET, GPU_NUM, IS_ON_NSML
 
+#hparams
+LOCAL_TRAIN_DIR = 'data/movie_review_phase1/'
+EMBEDDING_REQUIRES_GRAD = True # False if uses fasttext or word2vec embeddings
+
 # Random seed
 np.random.seed(0)
 torch.manual_seed(0)
@@ -50,6 +54,7 @@ args.add_argument('--learning_rate', type=float, default=0.01)
 args.add_argument('--lr_schedule', action='store_true')
 args.add_argument('--print_every', type=int, default=1)
 args.add_argument('--save_every', type=int, default=1)
+args.add_argument('--requires_grad', type=bool, default=EMBEDDING_REQUIRES_GRAD)
 config = args.parse_args()
 
 logger = utils.get_logger('MovieReview')
@@ -81,7 +86,7 @@ if config.use_gpu:
     model = model.cuda()
 
 if not HAS_DATASET and not IS_ON_NSML:  # It is not running on nsml
-    DATASET_PATH = 'data/small/' # 'data/movie_review_phase1/'
+    DATASET_PATH = LOCAL_TRAIN_DIR
 
 # DONOTCHANGE: They are reserved for nsml
 # This is for nsml leaderboard
@@ -160,7 +165,7 @@ if config.mode == 'train':
         embedding_weights = torch.FloatTensor(dictionary.embedding)
         if config.use_gpu:
             embedding_weights = embedding_weights.cuda()
-        model.embedding.weight = nn.Parameter(embedding_weights, requires_grad=True)
+        model.embedding.weight = nn.Parameter(embedding_weights, requires_grad=EMBEDDING_REQUIRES_GRAD)
 
     criterion = nn.MSELoss(size_average=False)
     trainable_params = [p for p in model.parameters() if p.requires_grad]
