@@ -59,6 +59,9 @@ class Trainer():
             self.model.hidden = model.init_hidden()
 
             self.optimizer.zero_grad()
+            if hasattr(self.model, 'init_hidden'):
+                self.model.batch_size = len(inputs)
+                self.model.hidden = self.model.init_hidden()
             self.outputs = self.model(self.inputs, self.features)
             if type(self.outputs) == tuple:
                 batch_loss = self.criterion(self.outputs[0], self.targets) + self.outputs[1]
@@ -84,6 +87,9 @@ class Trainer():
             else:
                 self.val_inputs, self.val_features, self.val_targets = Variable(val_inputs), Variable(val_features), Variable(val_targets)
 
+            if hasattr(self.model, 'init_hidden'):
+                self.model.batch_size = len(val_inputs)
+                self.model.hidden = self.model.init_hidden()
             self.val_outputs = self.model(self.val_inputs, self.val_features)
             if type(self.val_outputs) == tuple:
                 val_batch_loss = self.criterion(self.val_outputs[0], self.val_targets) + self.val_outputs[1]
@@ -200,6 +206,9 @@ class EnsembleTrainer():
                 inputs, features, targets = Variable(inputs), Variable(features), Variable(targets)
 
             optimizer.zero_grad()
+            if hasattr(self.model, 'init_hidden'):
+                self.model.batch_size = len(inputs)
+                self.model.hidden = self.model.init_hidden()
             outputs = model(inputs, features)
             if type(outputs) == tuple:
                 batch_loss = criterion(outputs[0], targets) + outputs[1]
@@ -225,6 +234,9 @@ class EnsembleTrainer():
             else:
                 val_inputs, val_features, val_targets = Variable(val_inputs), Variable(val_features), Variable(val_targets)
 
+            if hasattr(self.model, 'init_hidden'):
+                self.model.batch_size = len(val_inputs)
+                self.model.hidden = self.model.init_hidden()
             val_outputs = model(val_inputs, val_features)
             if type(val_outputs) == tuple:
                 val_batch_loss = criterion(val_outputs[0], val_targets) + val_outputs[1]
