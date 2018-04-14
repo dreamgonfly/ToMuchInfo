@@ -150,17 +150,17 @@ if config.mode == 'train':
     val_dataset = MovieReviewDataset(val_data, preprocessor, sort=config.sort_dataset, min_length=config.min_length, max_length=config.max_length)
 
     train_dataloader = DataLoader(dataset=train_dataset, batch_size=config.batch_size, shuffle=config.shuffle_dataset, collate_fn=collate_fn,
-                              num_workers=2)
+                              num_workers=0)
     val_dataloader = DataLoader(dataset=val_dataset, batch_size=config.batch_size, shuffle=True,
-                                  collate_fn=collate_fn, num_workers=2)
+                                  collate_fn=collate_fn, num_workers=0)
 
-    if preprocessor.dictionary.embedding is not None:
-        embedding_weights = torch.FloatTensor(dictionary.embedding)
-        model.embedding.weight = nn.Parameter(embedding_weights, requires_grad=False)
+#    if preprocessor.dictionary.embedding is not None:
+#        embedding_weights = torch.FloatTensor(dictionary.embedding)
+#        model.embedding.weight = nn.Parameter(embedding_weights, requires_grad=False)
 
-    criterion = nn.MSELoss(size_average=False)
+    criterion = nn.MSELoss()
     trainable_params = [p for p in model.parameters() if p.requires_grad]
-    optimizer = optim.Adam(params=trainable_params, lr=config.learning_rate)
+    optimizer = optim.Adam(filter(lambda p: p.requires_grad, model.parameters()), lr=config.learning_rate)
     lr_scheduler = optim.lr_scheduler.StepLR(optimizer, step_size=2, gamma=0.8)  # .ReduceLROnPlateau(optimizer, factor=0.7, patience=5, min_lr=0.00005)
 
     trainer = Trainer(model, train_dataloader, val_dataloader, criterion=criterion, optimizer=optimizer,

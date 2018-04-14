@@ -42,7 +42,7 @@ class BatchRNN(nn.Module):
                             bidirectional=bidirectional, bias=False)
         self.num_directions = 2 if bidirectional else 1  # why do I need this?
         self.config = config
-        self._hidden = self.init_hidden()
+        self.hidden = self.init_hidden()
 
 
     def forward(self, x):
@@ -70,11 +70,6 @@ class BatchRNN(nn.Module):
 
 
 
-"""
-deep speech model.
-Input :
-    없어도 된다!
-"""
 
 
 class CNN_LSTM(nn.Module):
@@ -90,20 +85,21 @@ class CNN_LSTM(nn.Module):
 
         self.word_embeddings = nn.Embedding(
             config.vocabulary_size, config.embedding_size)
+        self.word_embeddings.weight.requires_grad=False
 
         self.conv = nn.Sequential(
-            nn.Conv2d(1, 32, kernel_size=(41, 11), stride=(2, 2)),
-            nn.BatchNorm2d(32),
+            nn.Conv2d(1, 16, kernel_size=(41, 11), stride=(2, 2)),
+            nn.BatchNorm2d(16),
             nn.Hardtanh(0, 20, inplace=True),
-            nn.Conv2d(32, 32, kernel_size=(21, 11), stride=(2, 1)),
-            nn.BatchNorm2d(32),
+            nn.Conv2d(16, 16, kernel_size=(21, 11), stride=(2, 1)),
+            nn.BatchNorm2d(16),
             nn.Hardtanh(0, 20, inplace=True)
         )
         # Based on above convolutions and spectrogram size using conv formula (W - F + 2P)/ S+1
         rnn_input_size = int(math.floor(config.embedding_size) + 1)
         rnn_input_size = int(math.floor(rnn_input_size - 41) / 2 + 1)
         rnn_input_size = int(math.floor(rnn_input_size - 21) / 2)
-        rnn_input_size *= 32
+        rnn_input_size *= 16 
 
         self.rnn = BatchRNN(config=config, input_size=rnn_input_size, hidden_size=rnn_hidden_size, rnn_type=rnn_type,
                             bidirectional=bidirectional, batch_norm=True)
