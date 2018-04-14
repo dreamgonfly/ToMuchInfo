@@ -3,7 +3,7 @@ from collections import Counter
 import io
 import pickle
 from tokenizers import TwitterTokenizer
-from gensim.models import Word2Vec, FastText
+from gensim.models import Word2Vec #, FastText
 from gensim.models import TfidfModel
 
 
