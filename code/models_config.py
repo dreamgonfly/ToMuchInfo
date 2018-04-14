@@ -5,7 +5,7 @@ MODELS_CONFIG = {
         'tokenizer': 'TwitterTokenizer',
         'dictionary': 'RandomDictionary',
         'learning_rate': 0.005,
-        'sort_dictionary': True,
+        'shuffle_dictionary': True,
         'lr_schedule': True,
         'embedding_size': 300,
     },
