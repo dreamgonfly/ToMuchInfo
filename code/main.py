@@ -97,7 +97,7 @@ def bind_model(model, config):
     def save(filename, *args):
         checkpoint = {
             'model': model.state_dict(),
-            'preprocessor': preprocessor.state_dict()
+            'preprocessor': preprocessor.state_dict(),
         }
         torch.save(checkpoint, filename)
 
@@ -149,7 +149,9 @@ if config.mode == 'train':
     train_data, val_data = load_data(DATASET_PATH, val_size=0.1)
 
     logger.info("Building preprocessor...")
+    preprocessor.tokenizer.fit(train_data)
     preprocessor.dictionary.build_dictionary(train_data)
+
     for feature_name, feature_extractor in preprocessor.feature_extractors:
         feature_extractor.fit(train_data)
 

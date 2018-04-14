@@ -1,6 +1,9 @@
 from jamo import h2j, j2hcj
 import re
 from konlpy.tag import Twitter
+from soynlp.word import WordExtractor
+from soynlp.tokenizer import MaxScoreTokenizer
+from collections import Counter
 
 class DummyTokenizer:
     """A dummy tokenizer that splits a sentence by space"""
@@ -9,6 +12,12 @@ class DummyTokenizer:
         pass
 
     def fit(self, data):
+        pass
+
+    def state_dict(self):
+        pass
+
+    def load_state_dict(self, state_dict):
         pass
 
     def tokenize(self, raw_text):
@@ -35,6 +44,12 @@ class JamoTokenizer:
     def fit(self, data):
         pass
 
+    def state_dict(self):
+        pass
+
+    def load_state_dict(self, state_dict):
+        pass
+
     def tokenize(self, raw_text):
         """
 
@@ -54,6 +69,12 @@ class JamoMaskedTokenizer:
         self.ac = re.compile(r'ac[0-9]{2,10}')
 
     def fit(self, data):
+        pass
+
+    def state_dict(self):
+        pass
+
+    def load_state_dict(self, state_dict):
         pass
 
     def tokenize(self, raw_text):
@@ -81,6 +102,12 @@ class TwitterTokenizer:
         self.ac = re.compile(r'ac[0-9]{2,10}')
 
     def fit(self, data):
+        pass
+
+    def state_dict(self):
+        pass
+
+    def load_state_dict(self, state_dict):
         pass
 
     def tokenize(self, raw_text, stem=False):
@@ -119,6 +146,12 @@ class TwitterTokenizer_SH:
     def fit(self, data):
         pass
 
+    def state_dict(self):
+        pass
+
+    def load_state_dict(self, state_dict):
+        pass
+
     def tokenize(self, raw_text):
         """Noun, Verb, Adjective output 내는 tokenizer
         Args:
@@ -143,6 +176,12 @@ class MultiTokenizer:
     def fit(self, data):
         pass
 
+    def state_dict(self):
+        pass
+
+    def load_state_dict(self, state_dict):
+        pass
+
     def tokenize(self, raw_text):
         output = []
 
@@ -154,11 +193,81 @@ class MultiTokenizer:
 class SoyNLPTokenizer:
     def __init__(self, config):
         self.tokenizer = None
-        self.scores = None
+        self.scores = list()
+        self.word_extractor = WordExtractor(min_count=100,
+                                            min_cohesion_forward=0.05,
+                                            min_right_branching_entropy=0.0)
+        self.popular_ids = list()
+        self.re_movie_actor = re.compile("mv[0-9]*|ac[0-9]*")
 
     def fit(self, data):
+        # reviews 뽑기
         reviews = [review for review, label in data]
+
+        # 30번 이상 언급된 영화, 배우이름 뽑는 과정
+        ids_count = []
+        for review in reviews:
+            movie_actor_token = self.re_movie_actor.findall(review)
+            if movie_actor_token:
+                ids_count += movie_actor_token
+        ids_count = Counter(ids_count)
+        ids_count = {id:freq for id,freq in ids_count.items() if freq>30}
+        self.popular_ids = set(ids_count.keys())
+
+        # 각각의 review에 대해, 유명한 영화/배우이면 그 자체로 토큰을 넣고, 아니면 개/고양이 모양으로 바꿈
+        normalized_reviews = []
+        for review in reviews:
+            movie_actor_token = self.re_movie_actor.findall(review)
+            for token in movie_actor_token:
+                if token in self.popular_ids:
+                    pass
+                elif token[:2] == 'mv':
+                    review = review.replace(token, '🐶')
+                elif token[:2] == 'ac':
+                    review = review.replace(token, '🐱')
+                else:
+                    print("뭔가잘못되었어!!!!!!!!!!!!!!!!")
+            normalized_reviews.append(review)
+
+        # tokenizer 학습
+        self.word_extractor.train(normalized_reviews)
+        scores = self.word_extractor.extract()
+        scores = [(word, (score.cohesion_backward + score.cohesion_backward) * \
+                   (score.left_branching_entropy+score.right_branching_entropy))
+                  for word, score in scores.items()]
+        scores = {word:score for word, score in scores if score>0}
+        for popular_id in self.popular_ids:
+            scores.update({popular_id:20})
+        self.scores = scores
+        self.tokenizer = MaxScoreTokenizer(scores=self.scores)
+
+    def state_dict(self):
+
+        return {'scores': self.scores,
+                'popular_ids': self.popular_ids}
+
+    def load_state_dict(self, state_dict):
+        self.scores = state_dict['scores']
+        self.popular_ids = state_dict['popular_ids']
+        self.tokenizer = MaxScoreTokenizer(scores=self.scores)
+
+    def tokenize(self, raw_text):
+
+        movie_actor_token = self.re_movie_actor.findall(raw_text)
+        for token in movie_actor_token:
+            if token in self.popular_ids:
+                pass
+            elif token[:2] == 'mv':
+                raw_text = raw_text.replace(token, '🐶')
+            elif token[:2] == 'ac':
+                raw_text = raw_text.replace(token, '🐱')
+            else:
+                print("뭔가잘못되었어!!!!!!!!!!!!!!!!")
+
+        return self.tokenizer.tokenize(raw_text)
+
+
 if __name__ == '__main__':
 
-    tokenizer = JamoMaskedTokenizer(None)
+    tokenizer = SoyNLPTokenizer()
     assert tokenizer.tokenize("ac01431291의 출연만으로도 충분히 mv00069433.") == "🐱ㅇㅢ ㅊㅜㄹㅇㅕㄴㅁㅏㄴㅇㅡㄹㅗㄷㅗ ㅊㅜㅇㅂㅜㄴㅎㅣ 🐶."
