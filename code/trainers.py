@@ -55,9 +55,6 @@ class Trainer():
             else:
                 self.inputs, self.features, self.targets = Variable(inputs), Variable(features), Variable(targets)
 
-            self.model.batch_size = len(inputs)
-            self.model.hidden = model.init_hidden()
-
             self.optimizer.zero_grad()
             if hasattr(self.model, 'init_hidden'):
                 self.model.batch_size = len(inputs)
