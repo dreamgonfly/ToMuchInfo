@@ -7,19 +7,19 @@ class DummyTokenizer:
 
     def __init__(self, config):
         pass
-    
+
     def tokenize(self, raw_text):
         """Tokenize raw text
-        
+
         Args:
             raw_text: A string of raw text. For example : "무궁화 꽃이 피었습니다."
-        
+
         Returns:
             A list of tokens. For example:
-            
+
             ['무궁화', '꽃이', '피었습니다.']
         """
-        
+
         return raw_text.split()
 
 
@@ -65,19 +65,19 @@ class JamoMaskedTokenizer:
 
 class TwitterTokenizer:
     """Split text to twitter based tokens"""
-    
+
     def __init__(self, config):
         self.twitter = Twitter()
         self.mv = re.compile(r'mv[0-9]{2,10}')
-        self.ac = re.compile(r'ac[0-9]{2,10}') 
-    
+        self.ac = re.compile(r'ac[0-9]{2,10}')
+
     def tokenize(self, raw_text, stem=False):
         """
         Args:
             raw_text: "무궁화 꽃이 피었습니다."
         Returns:
             먼저 영화id와 배우id를 masking
-            A list of (token, pos) : [("무궁화","Noun"), ("꽃","Noun")...] 
+            A list of (token, pos) : [("무궁화","Noun"), ("꽃","Noun")...]
         """
         mv_replaced = self.mv.sub('🐶', raw_text)
         ac_replaced = self.ac.sub('🐱', mv_replaced)
@@ -89,15 +89,48 @@ class TwitterTokenizer:
                 idx_mv.append(i)
             elif token=='\uf431':
                 idx_ac.append(i)
-                
+
         for i in idx_mv:
             tokenized_text[i] = ('🐶', 'Movie')
         for i in idx_ac:
             tokenized_text[i] = ('🐱', 'Actor')
-            
+
         return tokenized_text
 
-    
+class TwitterTokenizer_SH:
+    """Noun, Adjective, Verb만 output 내는 tokenizer"""
+
+    def __init__(self, config):
+        self.tw = Twitter()
+        pass
+
+    def tokenize(self, raw_text):
+        """Noun, Verb, Adjective output 내는 tokenizer
+        Args:
+            raw_text: A string of raw text. For example : "무궁화 꽃이 피었습니다."
+        Returns:
+            A list of tokens. For example:
+            ['무궁화', '꽃이', '피었습니다.']
+        """
+        poses = self.tw.pos(raw_text)
+        output = []
+        for word, pos in poses:
+            if(pos == "Noun" or pos == "Verb" or pos == "Adjective"):
+                output.append(word+'_'+pos)
+        return output
+
+class MultiTokenizer:
+    def __init__(self, config):
+        self.tokenizers = [JamoTokenizer, TwitterTokenizer_SH, ]
+        self.config = config
+
+    def tokenize(self, raw_text):
+        output = []
+
+        for tokenizer in self.tokenizers:
+            output += (tokenizer(self.config).tokenize(raw_text))
+        return output
+
 if __name__ == '__main__':
 
     tokenizer = JamoMaskedTokenizer(None)

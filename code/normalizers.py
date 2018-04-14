@@ -27,7 +27,7 @@ class BasicNormalizer:
 
     def normalize(self, raw_text):
         def delete_quote(raw_text):
-            raw_text = raw_text.replace("'", '').replace('"', '')
+            raw_text = raw_text.replace("'", '').replace('"', '').strip()
             if raw_text.find("10자") > -1:
                 raw_text = raw_text[:raw_text.find("10자")]
             return raw_text
@@ -50,6 +50,7 @@ class BasicNormalizer:
         Returns:
             A string
         """
+
         normalized_text = delete_quote(raw_text)
         normalized_text = sibalizer(raw_text)
         return normalized_text
