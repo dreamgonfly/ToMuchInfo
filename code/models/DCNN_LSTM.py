@@ -21,7 +21,7 @@ class DCNN_LSTM(nn.Module):
         super(DCNN_LSTM, self).__init__()
 
         kernel_sizes = [3,4,5] # config.kernel_sizes
-
+        self.kernel_sizes = kernel_sizes
         vocabulary_size = config.vocabulary_size
         embedding_size = config.embedding_size
 
@@ -34,6 +34,7 @@ class DCNN_LSTM(nn.Module):
         self.relu = nn.ReLU(inplace=True)
         self.dropout = nn.Dropout()
         self.lstm = nn.LSTM(input_size=100*len(kernel_sizes),hidden_size =128,bidirectional=True)
+        self.config = config
 
         self.batch_size = config.batch_size
         self.hidden = self.init_hidden()
@@ -70,7 +71,7 @@ class DCNN_LSTM(nn.Module):
 
 
         #batch_norm
-        features = SequenceWise(nn.BatchNorm1d(100*len(kernel_sizes)))(features)
+        features = SequenceWise(nn.BatchNorm1d(100*len(self.kernel_sizes)))(features)
 
         # now LSTM
         features ,self.hidden = self.lstm(features,self.hidden)
@@ -84,7 +85,7 @@ class DCNN_LSTM(nn.Module):
     def init_hidden(self):
         # the first is the hidden h
         # the second is the cell  c
-        if(config.use_gpu):
+        if(self.config.use_gpu):
             return (Variable(torch.zeros(1 * 2, self.batch_size , 128)).cuda(),
                     Variable(torch.zeros(1 * 2, self.batch_size , 128)).cuda())
         else:
