@@ -8,6 +8,7 @@ from .LSTM_Attention import LSTM_Attention
 from .FastText import FastText
 from .TextCNN import TextCNN
 from .RCNN import RCNN
+from .DCNN_LSTM import DCNN_LSTM
 
 __all__ = ['WordCNN',
            'WordCNN_word',
@@ -19,4 +20,5 @@ __all__ = ['WordCNN',
            'FastText',
            'TextCNN',
            'RCNN',
+           'DCNN_LSTM',
            ]
