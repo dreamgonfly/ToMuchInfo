@@ -3,8 +3,7 @@ from collections import Counter
 import io
 import pickle
 from tokenizers import TwitterTokenizer
-from gensim.models import Word2Vec #, FastText
-from gensim.models import TfidfModel
+from gensim.models import Word2Vec, FastText
 
 
 class RandomDictionary:
@@ -168,21 +167,22 @@ class FastTextVectorizer:
                                  sg=1,
                                  window=5,
                                  negative=10,
-                                 min_n=1,
+                                 min_n=2,
                                  max_n=5,
                                  word_ngrams=1,
                                  size=self.embedding_size,
                                  iter=20,
+                                 sorted_vocab=1,
                                  )
 
         vocab_words = list(self.fasttext.wv.vocab.keys())
-        word2idx = {word: idx for idx, word in enumerate(vocab_words)}
-        word2idx['<UNK>'] = len(vocab_words)
-        word2idx['<PAD>'] = len(vocab_words) + 1
+        word2idx = {word: idx+2 for idx, word in enumerate(vocab_words)}
+        word2idx['<UNK>'] = 0
+        word2idx['<PAD>'] = 1
 
-        idx2word = {idx: word for idx, word in enumerate(vocab_words)}
-        idx2word[len(vocab_words)] = '<UNK>'
-        idx2word[len(vocab_words) + 1] = '<PAD>'
+        idx2word = {idx+2: word for idx, word in enumerate(vocab_words)}
+        idx2word[0] = '<UNK>'
+        idx2word[1] = '<PAD>'
         print("word2idx", word2idx['쓰레기'], word2idx['<PAD>'])
         print("idx2word", idx2word[word2idx['쓰레기']], idx2word[word2idx['<PAD>']])
         print("vocab_words", vocab_words[0])

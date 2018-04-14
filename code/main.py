@@ -21,7 +21,7 @@ import nsml
 from nsml import DATASET_PATH, HAS_DATASET, GPU_NUM, IS_ON_NSML
 
 #hparams
-LOCAL_TRAIN_DIR = 'data/movie_review_phase1/'
+LOCAL_TRAIN_DIR = 'data/small/'
 EMBEDDING_REQUIRES_GRAD = True # False if uses fasttext or word2vec embeddings
 
 # Random seed
@@ -55,6 +55,7 @@ args.add_argument('--lr_schedule', action='store_true')
 args.add_argument('--print_every', type=int, default=1)
 args.add_argument('--save_every', type=int, default=1)
 args.add_argument('--requires_grad', type=bool, default=EMBEDDING_REQUIRES_GRAD)
+args.add_argument('--down_sampling', type=bool, default=False)
 config = args.parse_args()
 
 logger = utils.get_logger('MovieReview')
@@ -156,13 +157,30 @@ if config.mode == 'train':
     train_dataset = MovieReviewDataset(train_data, preprocessor, sort=config.sort_dataset, min_length=config.min_length, max_length=config.max_length)
     val_dataset = MovieReviewDataset(val_data, preprocessor, sort=config.sort_dataset, min_length=config.min_length, max_length=config.max_length)
 
-    train_dataloader = DataLoader(dataset=train_dataset, batch_size=config.batch_size, shuffle=config.shuffle_dataset, collate_fn=collate_fn,
-                              num_workers=2)
-    val_dataloader = DataLoader(dataset=val_dataset, batch_size=config.batch_size, shuffle=True,
-                                  collate_fn=collate_fn, num_workers=2)
+    if config.down_sampling:
+        train_labels = [label for train, label in train_data]
+        class_sample_count = np.array([len(np.where(train_labels==t)[0]) for t in range(1,11)])  # dataset has 10 class-1 samples, 1 class-2 samples, etc.
+        weights = torch.FloatTensor([1,1,1,1,1,1,1,1,1,1/6]) # 1 / torch.FloatTensor(class_sample_count)
+        weights = weights.double()
+        sampler = torch.utils.data.sampler.WeightedRandomSampler(weights, config.batch_size)
+        train_dataloader = torch.utils.data.DataLoader(dataset=train_dataset,
+                                                  batch_size=config.batch_size,
+                                                  shuffle=config.shuffle_dataset,
+                                                  collate_fn=collate_fn,
+                                                  num_workers=2,
+                                                  sampler=sampler,
+                                                  )
+        val_dataloader = DataLoader(dataset=val_dataset, batch_size=config.batch_size, shuffle=True,
+                                    collate_fn=collate_fn, num_workers=2)
+
+    else:
+        train_dataloader = DataLoader(dataset=train_dataset, batch_size=config.batch_size, shuffle=config.shuffle_dataset, collate_fn=collate_fn,
+                                  num_workers=2)
+        val_dataloader = DataLoader(dataset=val_dataset, batch_size=config.batch_size, shuffle=True,
+                                      collate_fn=collate_fn, num_workers=2)
 
     if preprocessor.dictionary.embedding is not None:
-        embedding_weights = torch.FloatTensor(dictionary.embedding)
+        embedding_weights = torch.FloatTensor(preprocessor.dictionary.embedding)
         if config.use_gpu:
             embedding_weights = embedding_weights.cuda()
         model.embedding.weight = nn.Parameter(embedding_weights, requires_grad=EMBEDDING_REQUIRES_GRAD)
