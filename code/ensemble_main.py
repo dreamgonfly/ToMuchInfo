@@ -194,20 +194,14 @@ if config.mode == 'train':
     logger.info("Building preprocessor...")
     for config_name in ensemble_models:
         preprocessor = ensemble_models[config_name]['preprocessor']
+        config = ensemble_models[config_name]['config']
+        model = ensemble_models[config_name]['model']
+
         for feature_name, feature_extractor in preprocessor.feature_extractors:
             feature_extractor.fit(train_data)
 
         preprocessor.tokenizer.fit(train_data)
         preprocessor.dictionary.build_dictionary(train_data)
-
-    unique_dataset_settings = {}
-    for config_name in ensemble_models:
-        preprocessor = ensemble_models[config_name]['preprocessor']
-        config = ensemble_models[config_name]['config']
-        unique_preprocess_name = ' '.join([config.normalizer, config.tokenizer, config.features, config.dictionary])
-        if unique_preprocess_name in unique_dataset_settings:
-            ensemble_models[config_name]['train_dataloader'], ensemble_models[config_name]['val_dataloader'] = unique_dataset_settings[unique_preprocess_name]
-            continue
 
         logger.info("Making dataset & dataloader for {} ...".format(config_name))
         train_dataset = MovieReviewDataset(train_data, preprocessor, sort=config.sort_dataset, min_length=config.min_length, max_length=config.max_length)
@@ -231,14 +225,6 @@ if config.mode == 'train':
 
         ensemble_models[config_name]['train_dataloader'] = train_dataloader
         ensemble_models[config_name]['val_dataloader'] = val_dataloader
-        unique_dataset_settings[unique_preprocess_name] = train_dataloader, val_dataloader
-    logger.info("Making dataset & dataloader Done")
-
-    for config_name in ensemble_models:
-        config = ensemble_models[config_name]['config']
-        preprocessor = ensemble_models[config_name]['preprocessor']
-        model = ensemble_models[config_name]['model']
-        train_dataloader = ensemble_models[config_name]['train_dataloader']
 
         ## initialize model param w/ LSUV
         for inputs, features, targets in train_dataloader:
