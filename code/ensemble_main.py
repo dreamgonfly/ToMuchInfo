@@ -220,8 +220,7 @@ if config.mode == 'train':
             weights = torch.FloatTensor([1, 1, 1, 1, 1, 1, 1, 1, 1, 1 / 6]) # 1 / torch.FloatTensor(class_sample_count) #
             weights = weights.double().cuda()
             sampler = torch.utils.data.sampler.WeightedRandomSampler(weights, config.batch_size)
-            train_dataloader = torch.utils.data.DataLoader(dataset=train_dataset, batch_size=config.batch_size,
-                                                           shuffle=config.shuffle_dataset, collate_fn=collate_fn,
+            train_dataloader = torch.utils.data.DataLoader(dataset=train_dataset, batch_size=config.batch_size, collate_fn=collate_fn,
                                                            num_workers=2, sampler=sampler, )
         else:
             train_dataloader = DataLoader(dataset=train_dataset, batch_size=config.batch_size,

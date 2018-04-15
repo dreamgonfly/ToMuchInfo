@@ -275,7 +275,7 @@ class EnsembleTrainer():
                 optimizer = self.ensemble_models[config_name]['optimizer']
                 lr_schedule = self.ensemble_models[config_name]['config'].lr_schedule
                 lr_scheduler = self.ensemble_models[config_name]['lr_scheduler']
-                min_lr = self.ensemble_models[config_name]['min_lr']
+                min_lr = self.ensemble_models[config_name]['config'].min_lr
                 train_dataloader = self.ensemble_models[config_name]['train_dataloader']
                 val_dataloader = self.ensemble_models[config_name]['val_dataloader']
 
