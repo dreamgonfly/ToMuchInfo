@@ -89,6 +89,7 @@ class Trainer():
                 self.model.batch_size = len(val_inputs)
                 self.model.hidden = self.model.init_hidden()
             self.val_outputs = self.model(self.val_inputs, self.val_features)
+            self.val_outputs = torch.clamp(self.val_outputs, min=1, max=10)
             if type(self.val_outputs) == tuple:
                 val_batch_loss = self.criterion(self.val_outputs[0], self.val_targets) + self.val_outputs[1]
             else:
@@ -237,6 +238,7 @@ class EnsembleTrainer():
                 model.batch_size = len(val_inputs)
                 model.hidden = model.init_hidden()
             val_outputs = model(val_inputs, val_features)
+            val_outputs = torch.clamp(val_outputs, min=1, max=10)
             if type(val_outputs) == tuple:
                 val_batch_loss = criterion(val_outputs[0], val_targets) + val_outputs[1]
             else:
