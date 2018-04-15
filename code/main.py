@@ -57,6 +57,7 @@ args.add_argument('--print_every', type=int, default=1)
 args.add_argument('--save_every', type=int, default=1)
 args.add_argument('--requires_grad', type=bool, default=EMBEDDING_REQUIRES_GRAD)
 args.add_argument('--down_sampling', type=bool, default=False)
+args.add_argument('--min_lr', type=float, default=0)
 config = args.parse_args()
 
 logger = utils.get_logger('MovieReview')
@@ -209,7 +210,7 @@ if config.mode == 'train':
     lr_scheduler = optim.lr_scheduler.StepLR(optimizer, step_size=2, gamma=0.8)  # .ReduceLROnPlateau(optimizer, factor=0.7, patience=5, min_lr=0.00005)
 
     trainer = Trainer(model, train_dataloader, val_dataloader, criterion=criterion, optimizer=optimizer,
-                      lr_schedule=config.lr_schedule, lr_scheduler=lr_scheduler, use_gpu=config.use_gpu, logger=logger)
+                      lr_schedule=config.lr_schedule, lr_scheduler=lr_scheduler, min_lr=config.min_lr, use_gpu=config.use_gpu, logger=logger)
     trainer.run(epochs=config.epochs)
 
 # 로컬 테스트 모드일때 사용합니다

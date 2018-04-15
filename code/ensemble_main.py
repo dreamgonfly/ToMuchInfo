@@ -56,6 +56,7 @@ args.add_argument('--lr_schedule', action='store_true')
 args.add_argument('--print_every', type=int, default=1)
 args.add_argument('--save_every', type=int, default=1)
 args.add_argument('--down_sampling', type=bool, default=False)
+args.add_argument('--min_lr', type=float, default=0)
 default_config = args.parse_args()
 
 logger = utils.get_logger('Ensemble')

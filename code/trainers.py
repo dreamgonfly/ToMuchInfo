@@ -11,7 +11,7 @@ import nsml
 STOP_TRAIN_AFTER = 4
 
 class Trainer():
-    def __init__(self, model, train_dataloader, val_dataloader, criterion, optimizer, lr_schedule, lr_scheduler,
+    def __init__(self, model, train_dataloader, val_dataloader, criterion, optimizer, lr_schedule, lr_scheduler, min_lr,
                  use_gpu=False, print_every=1, save_every=1, logger=None):
 
         self.model = model
@@ -21,6 +21,7 @@ class Trainer():
         self.optimizer = optimizer
         self.lr_schedule = lr_schedule
         self.lr_scheduler = lr_scheduler
+        self.min_lr = min_lr
 
         self.print_every = print_every
         self.save_every = save_every
@@ -112,7 +113,9 @@ class Trainer():
             self.epoch = epoch
 
             epoch_loss, val_epoch_loss = self.train()
-            if self.lr_schedule:
+            current_lr = self.optimizer.param_groups[0]['lr']
+
+            if self.lr_schedule and current_lr > self.min_lr:
                 self.lr_scheduler.step()
 
             self.epoch_losses.append(epoch_loss)
@@ -121,7 +124,6 @@ class Trainer():
 #             self.val_epoch_metrics.append(val_epoch_metric)
 
             if epoch % self.print_every == 0:
-                current_lr = self.optimizer.param_groups[0]['lr']
                 message = self.base_message.format(epoch=epoch, progress=epoch / epochs, train_loss=epoch_loss,
                                                    val_loss=val_epoch_loss,
                                                    learning_rate=current_lr,
@@ -271,11 +273,13 @@ class EnsembleTrainer():
                 optimizer = self.ensemble_models[config_name]['optimizer']
                 lr_schedule = self.ensemble_models[config_name]['config'].lr_schedule
                 lr_scheduler = self.ensemble_models[config_name]['lr_scheduler']
+                min_lr = self.ensemble_models[config_name]['min_lr']
                 train_dataloader = self.ensemble_models[config_name]['train_dataloader']
                 val_dataloader = self.ensemble_models[config_name]['val_dataloader']
 
                 epoch_loss, val_epoch_loss = self.train(model, criterion, optimizer, train_dataloader, val_dataloader, )
-                if lr_schedule:
+                current_lr = optimizer.param_groups[0]['lr']
+                if lr_schedule and current_lr > min_lr:
                     lr_scheduler.step()
 
                 self.epoch_losses[config_name].append(epoch_loss)
@@ -294,7 +298,6 @@ class EnsembleTrainer():
                     "Learning rate: {learning_rate:<.4} ")
 
                 if epoch % self.print_every == 0:
-                    current_lr = optimizer.param_groups[0]['lr']
                     message = config_result_message.format(config=config_name, epoch=epoch, progress=epoch / epochs, train_loss=epoch_loss,
                                                        val_loss=val_epoch_loss, learning_rate=current_lr,
                                                        elapsed=self.elapsed_time())
