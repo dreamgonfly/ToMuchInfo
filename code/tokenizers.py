@@ -5,6 +5,7 @@ from soynlp.word import WordExtractor
 from soynlp.tokenizer import MaxScoreTokenizer
 from collections import Counter
 
+
 class DummyTokenizer:
     """A dummy tokenizer that splits a sentence by space"""
 
@@ -284,7 +285,6 @@ class JamoUnpopularMaskedTokenizer:
         self.popular_ids = {name for name, freq in counter.items() if freq > 30}
 
     def tokenize(self, raw_text):
-        print(raw_text)
         jamo_text = j2hcj(h2j(raw_text))
         movie_actor_tokens = self.re_movie_actor.findall(jamo_text)
         for token in movie_actor_tokens:
@@ -297,7 +297,6 @@ class JamoUnpopularMaskedTokenizer:
             else:
                 raise NotImplementedError("뭔가 잘못되었어!!!")
         tokenized = self.re_all.findall(jamo_text)
-        print(tokenized)
         return tokenized
 
     def state_dict(self):

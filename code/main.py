@@ -168,7 +168,6 @@ if config.mode == 'train':
         sampler = torch.utils.data.sampler.WeightedRandomSampler(weights, config.batch_size)
         train_dataloader = torch.utils.data.DataLoader(dataset=train_dataset,
                                                   batch_size=config.batch_size,
-                                                  shuffle=config.shuffle_dataset,
                                                   collate_fn=collate_fn,
                                                   num_workers=2,
                                                   sampler=sampler,
