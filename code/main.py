@@ -147,7 +147,7 @@ if config.pause:
 if config.mode == 'train':
     # 데이터를 로드합니다.
     logger.info("Loading data...")
-    train_data, val_data = load_data(DATASET_PATH, val_size=0.1)
+    train_data, val_data = load_data(DATASET_PATH, val_size=0.03)
 
     logger.info("Building preprocessor...")
     preprocessor.tokenizer.fit(train_data)

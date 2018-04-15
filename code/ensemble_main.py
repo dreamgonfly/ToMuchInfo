@@ -187,7 +187,7 @@ if config.pause:
 if config.mode == 'train':
     # 데이터를 로드합니다.
     logger.info("Loading data...")
-    train_data, val_data = load_data(DATASET_PATH, val_size=0.1)
+    train_data, val_data = load_data(DATASET_PATH, val_size=0.03)
     # print('using only 1000 samples for test')
     # train_data, val_data = train_data[:1000], val_data[:1000] # For test
 
