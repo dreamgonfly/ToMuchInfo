@@ -4,6 +4,7 @@ import io
 import pickle
 from tokenizers import TwitterTokenizer
 from gensim.models import Word2Vec, FastText
+from sklearn.feature_extraction.text import TfidfVectorizer
 
 
 class RandomDictionary:
@@ -272,6 +273,33 @@ class Word2VecDictionary:
         self.word2idx = state_dict['word2idx']
         self.vocab_words = state_dict['vocab_words']
 
+
+class TfidfVectorizer:
+    def __init__(self, tokenizer, config):
+        self.toknizer = tokenizer
+        self.vocabulary_size = config.vocabulary_size
+        self.embedding_size = config.embedding_size
+        self.PAD_TOKEN = '<PAD>'
+        self.UNK_TOKEN = '<UNK>'
+        self.vectorizer = None
+
+    def build_dictionary(self, data):
+        self.vocab_words, self.word2idx, self.idx2word = self._build_vocabulary(data)
+        self.embedding = None
+
+    def indexer(self, word):
+        try:
+            return self.word2idx[word]
+        except KeyError:
+            return self.word2idx[self.UNK_TOKEN]
+
+    def _build_vocabulary(self, data):
+        reviews = [review for review, label in data]
+        tokenized_reviews = [self.tokenizer.tokenize(review) for review in reviews]
+        tokens = [[token for token, pos in tokenized_list] for tokenized_list in tokenized_reviews]
+
+        self.vectorizer = TfidfVectorizer()
+        self.vectorizer.fit(reviews)
 if __name__ == '__main__':
 
     class Config:
@@ -280,4 +308,4 @@ if __name__ == '__main__':
         vocabulary_size = 3000
 
     dictionary = FasttextDictionary(config=Config)
-    dictionary.build_dictionary([])
+    dictionary.build_dictionary()
