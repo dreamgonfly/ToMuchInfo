@@ -5,6 +5,7 @@ from soynlp.word import WordExtractor
 from soynlp.tokenizer import MaxScoreTokenizer
 from collections import Counter
 
+
 class DummyTokenizer:
     """A dummy tokenizer that splits a sentence by space"""
 
@@ -265,6 +266,44 @@ class SoyNLPTokenizer:
                 print("뭔가잘못되었어!!!!!!!!!!!!!!!!")
 
         return self.tokenizer.tokenize(raw_text)
+
+
+class JamoUnpopularMaskedTokenizer:
+    def __init__(self, config):
+        self.popular_ids = list()
+        self.re_movie_actor = re.compile(r"mv[0-9]+|ac[0-9]+")
+        self.re_all = re.compile(r"mv[0-9]+|ac[0-9]+|&#\d{1,6};|.")
+
+    def fit(self, data):
+        # reviews 뽑기
+        reviews = (review for review, label in data)
+
+        # 30번 이상 언급된 영화, 배우이름 뽑는 과정
+        movie_actor_reviews = [self.re_movie_actor.findall(review) for review in reviews]
+        movie_actor_whole_list = sum(movie_actor_reviews, [])
+        counter = Counter(movie_actor_whole_list)
+        self.popular_ids = {name for name, freq in counter.items() if freq > 30}
+
+    def tokenize(self, raw_text):
+        jamo_text = j2hcj(h2j(raw_text))
+        movie_actor_tokens = self.re_movie_actor.findall(jamo_text)
+        for token in movie_actor_tokens:
+            if token in self.popular_ids:
+                pass
+            elif token[:2] == 'mv':
+                jamo_text = jamo_text.replace(token, '🐶')
+            elif token[:2] == 'ac':
+                jamo_text = jamo_text.replace(token, '🐱')
+            else:
+                raise NotImplementedError("뭔가 잘못되었어!!!")
+        tokenized = self.re_all.findall(jamo_text)
+        return tokenized
+
+    def state_dict(self):
+        return {'popular_ids': self.popular_ids}
+
+    def load_state_dict(self, state_dict):
+        self.popular_ids = state_dict['popular_ids']
 
 
 if __name__ == '__main__':

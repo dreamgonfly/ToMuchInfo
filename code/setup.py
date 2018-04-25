@@ -29,5 +29,7 @@ setup(
         'konlpy',
         'gensim',
         'soynlp',
+        'pandas',
+        'xgboost',
     ]
 )

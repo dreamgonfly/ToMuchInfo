@@ -1,12 +1,14 @@
 import argparse
 import os
 import numpy as np
+import pandas as pd
 from collections import defaultdict
 
 import torch
 from torch.autograd import Variable
 from torch import nn, optim
 from torch.utils.data import DataLoader
+from xgboost import XGBRegressor
 
 import models
 import normalizers
@@ -14,9 +16,9 @@ import tokenizers
 import feature_extractors
 import dictionaries
 from dataloader import load_data, collate_fn, Preprocessor, MovieReviewDataset
-from trainers import Trainer, EnsembleTrainer
+from trainers import Trainer, EnsembleTrainer_xgb
 import utils
-from models_config import MODELS_CONFIG
+from models_config_xgb import MODELS_CONFIG
 
 import nsml
 from nsml import DATASET_PATH, HAS_DATASET, GPU_NUM, IS_ON_NSML
@@ -119,8 +121,10 @@ def bind_model(model, config):
         checkpoint = {
             'model': {config_name:ensemble_models[config_name]['model'].state_dict() for config_name in ensemble_models},
             'preprocessor': {config_name:ensemble_models[config_name]['preprocessor'].state_dict() for config_name in ensemble_models},
-            'best_losses': {config_name: ensemble_models[config_name]['best_loss'] for config_name in ensemble_models}
-        }
+            'best_losses': {config_name: ensemble_models[config_name]['best_loss'] for config_name in ensemble_models},
+            'train_predictions': {config_name: ensemble_models[config_name]['train_predictions'] for config_name in ensemble_models},
+            'train_labels': {config_name: ensemble_models[config_name]['train_labels'] for config_name in ensemble_models},
+            }
         torch.save(checkpoint, filename)
 
     # 저장한 모델을 불러올 수 있는 함수입니다.
@@ -133,6 +137,9 @@ def bind_model(model, config):
             model.load_state_dict(checkpoint['model'][config_name])
             preprocessor.load_state_dict(checkpoint['preprocessor'][config_name])
             ensemble_models[config_name]['best_loss'] = checkpoint['best_losses'][config_name]
+            ensemble_models[config_name]['train_predictions'] = checkpoint['train_predictions'][config_name]
+            ensemble_models[config_name]['train_labels'] = checkpoint['train_labels'][config_name]
+
         print('Checkpoint loaded')
 
     def infer(raw_data, **kwargs):
@@ -143,9 +150,10 @@ def bind_model(model, config):
         """
         # dataset.py에서 작성한 preprocess 함수를 호출하여, 문자열을 벡터로 변환합니다
 
-        predictions = []
+        X_train = pd.DataFrame()
+        y_train = None
+        X_test = list()
         for config_name in ensemble_models:
-
             # INFER_THRESHOLD보다 높은 loss를 가진 모델은 제외
             if ensemble_models[config_name]['best_loss'] > INFER_THRESHOLD:
                 continue
@@ -159,15 +167,16 @@ def bind_model(model, config):
 
             model.eval()
             # 저장한 모델에 입력값을 넣고 prediction 결과를 리턴받습니다
-            if hasattr(model, 'init_hidden'):
-                model.batch_size = len(reviews)
-                model.hidden = model.init_hidden()
             output_prediction = model(reviews, features)
 
             ensemble_models[config_name]['prediction'] = output_prediction
-            predictions.append(output_prediction)
+            X_train[config_name] = ensemble_models[config_name]['train_predictions']
+            X_test.append(output_prediction)
+            y_train = ensemble_models[config_name]['train_labels']
 
-        ensemble_predictions = sum(predictions) / len(predictions)
+        xgb = XGBRegressor()
+        xgb.fit(X_train, y_train)
+        ensemble_predictions = xgb.predict(X_test).values
         prediction_clipped = torch.clamp(ensemble_predictions, min=1, max=10)
 
         point = prediction_clipped.data.tolist()
@@ -253,7 +262,7 @@ if config.mode == 'train':
         ensemble_models[config_name]['optimizer'] = optimizer
         ensemble_models[config_name]['lr_scheduler'] = lr_scheduler
 
-    trainer = EnsembleTrainer(ensemble_models, use_gpu=default_config.use_gpu, logger=logger)
+    trainer = EnsembleTrainer_xgb(ensemble_models, use_gpu=default_config.use_gpu, logger=logger)
     trainer.run(epochs=default_config.epochs)
 
 # 로컬 테스트 모드일때 사용합니다

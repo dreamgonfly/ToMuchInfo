@@ -57,6 +57,7 @@ args.add_argument('--print_every', type=int, default=1)
 args.add_argument('--save_every', type=int, default=1)
 args.add_argument('--requires_grad', type=bool, default=EMBEDDING_REQUIRES_GRAD)
 args.add_argument('--down_sampling', type=bool, default=False)
+args.add_argument('--min_lr', type=float, default=0)
 config = args.parse_args()
 
 logger = utils.get_logger('MovieReview')
@@ -146,7 +147,7 @@ if config.pause:
 if config.mode == 'train':
     # 데이터를 로드합니다.
     logger.info("Loading data...")
-    train_data, val_data = load_data(DATASET_PATH, val_size=0.1)
+    train_data, val_data = load_data(DATASET_PATH, val_size=0.03)
 
     logger.info("Building preprocessor...")
     preprocessor.tokenizer.fit(train_data)
@@ -167,7 +168,6 @@ if config.mode == 'train':
         sampler = torch.utils.data.sampler.WeightedRandomSampler(weights, config.batch_size)
         train_dataloader = torch.utils.data.DataLoader(dataset=train_dataset,
                                                   batch_size=config.batch_size,
-                                                  shuffle=config.shuffle_dataset,
                                                   collate_fn=collate_fn,
                                                   num_workers=2,
                                                   sampler=sampler,
@@ -187,7 +187,13 @@ if config.mode == 'train':
             inputs = Variable(inputs).cuda()
         else:
             inputs = Variable(inputs)
-        LSUVinit(model,inputs,needed_std = 1.0, std_tol = 0.1, max_attempts = 100, do_orthonorm = False, cuda= config.use_gpu)
+        LSUVinit(model,
+                 inputs,
+                 needed_std=1.0,
+                 std_tol=0.1,
+                 max_attempts=100,
+                 do_orthonorm=False,
+                 cuda=config.use_gpu)
         break
 
 
@@ -203,7 +209,7 @@ if config.mode == 'train':
     lr_scheduler = optim.lr_scheduler.StepLR(optimizer, step_size=2, gamma=0.8)  # .ReduceLROnPlateau(optimizer, factor=0.7, patience=5, min_lr=0.00005)
 
     trainer = Trainer(model, train_dataloader, val_dataloader, criterion=criterion, optimizer=optimizer,
-                      lr_schedule=config.lr_schedule, lr_scheduler=lr_scheduler, use_gpu=config.use_gpu, logger=logger)
+                      lr_schedule=config.lr_schedule, lr_scheduler=lr_scheduler, min_lr=config.min_lr, use_gpu=config.use_gpu, logger=logger)
     trainer.run(epochs=config.epochs)
 
 # 로컬 테스트 모드일때 사용합니다
