@@ -418,8 +418,8 @@ class EnsembleTrainer_xgb():
 #             print("[ENSEMBLE XGB] targets : Type : {}, Length : {}".format(type(targets), len(targets)))
 
             if is_best_epoch:
-                self.train_predictions[config_name].append(list(outputs))
-                self.train_labels[config_name].append(list(targets))
+                self.train_predictions[config_name] += list(outputs)
+                self.train_labels[config_name] += list(targets)
 
 
         # validation
@@ -446,6 +446,7 @@ class EnsembleTrainer_xgb():
 #             self.val_batch_metrics.append(val_batch_metric.data)
 
         train_data_size = len(train_dataloader.dataset)
+
         epoch_loss = torch.cat(batch_losses).sum() / train_data_size
 #         epoch_metric = torch.cat(self.batch_metrics).sum() / train_data_size
 
@@ -478,7 +479,7 @@ class EnsembleTrainer_xgb():
                         epoch_loss, val_epoch_loss = self.train(model, criterion, optimizer, train_dataloader,
                                                                 val_dataloader, config_name, is_best_epoch=True)
                     else:
-                        epoch_loss, val_epoch_loss = self.train(model, criterion, optimizer, train_dataloader, val_dataloader, config_name)
+                        epoch_loss, val_epoch_loss = self.train(model, criterion, optimizer, train_dataloader, val_dataloader, config_name, is_best_epoch=False)
 
                     current_lr = optimizer.param_groups[0]['lr']
 
@@ -499,8 +500,8 @@ class EnsembleTrainer_xgb():
                                                            elapsed=self.elapsed_time())
                         self.logger.info(message)
 
-                # print("[ENSEMBLE XGB] train_predictions : {}".format(len(self.train_predictions[config_name])))
-                # print("[ENSEMBLE XGB] train_labels : {}".format(len(self.train_labels[config_name])))
+                print("[ENSEMBLE XGB] train_predictions : {}".format(len(self.train_predictions[config_name])))
+                print("[ENSEMBLE XGB] train_labels : {}".format(len(self.train_labels[config_name])))
                 self.ensemble_models[config_name]['train_predictions'] = self.train_predictions[config_name]
                 self.ensemble_models[config_name]['train_labels'] = self.train_labels[config_name]
 
@@ -520,7 +521,6 @@ class EnsembleTrainer_xgb():
                 # self.save_model()
 
                 # DONOTCHANGE (You can decide how often you want to save the model)
-                nsml.save(epoch)
                 nsml.save(epoch)
 
     def elapsed_time(self):
