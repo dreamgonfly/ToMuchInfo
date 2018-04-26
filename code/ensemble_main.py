@@ -59,6 +59,7 @@ args.add_argument('--save_every', type=int, default=1)
 args.add_argument('--down_sampling', type=bool, default=False)
 args.add_argument('--min_lr', type=float, default=0)
 args.add_argument('--loss_weights', default=False, type=bool, help='loss_weights')
+args.add_argument('--small', default=False)
 default_config = args.parse_args()
 
 logger = utils.get_logger('Ensemble')
@@ -196,7 +197,7 @@ if config.pause:
 if config.mode == 'train':
     # 데이터를 로드합니다.
     logger.info("Loading data...")
-    train_data, val_data = load_data(DATASET_PATH, val_size=0.03)
+    train_data, val_data = load_data(DATASET_PATH, val_size=0.03, small=default_config.small)
     # print('using only 1000 samples for test')
     # train_data, val_data = train_data[:1000], val_data[:1000] # For test
 
