@@ -59,7 +59,9 @@ args.add_argument('--save_every', type=int, default=1)
 args.add_argument('--requires_grad', type=bool, default=EMBEDDING_REQUIRES_GRAD)
 args.add_argument('--down_sampling', type=bool, default=False)
 args.add_argument('--min_lr', type=float, default=0)
+args.add_argument('--loss_weights', default=[1,1,1,1,1,1,1,1,1,1], metavar='W', type=int, nargs='+', help='loss_weights')
 config = args.parse_args()
+assert len(config.loss_weights) == 10, "Loss weights must be 10 values"
 
 logger = utils.get_logger('MovieReview')
 logger.info('Arguments: {}'.format(config))
@@ -208,7 +210,11 @@ if config.mode == 'train':
             embedding_weights = embedding_weights.cuda()
         model.embedding.weight = nn.Parameter(embedding_weights, requires_grad=EMBEDDING_REQUIRES_GRAD)
 
-    criterion = nn.CrossEntropyLoss(size_average=False) # nn.MSELoss(size_average=False)
+    if config.use_gpu:
+        loss_weights = torch.FloatTensor(config.loss_weights).cuda()
+    else:
+        loss_weights = torch.FloatTensor(config.loss_weights)
+    criterion = nn.CrossEntropyLoss(size_average=False, weight=loss_weights) # nn.MSELoss(size_average=False)
     trainable_params = [p for p in model.parameters() if p.requires_grad]
     optimizer = optim.Adam(filter(lambda p: p.requires_grad, model.parameters()), lr=config.learning_rate)
     lr_scheduler = optim.lr_scheduler.StepLR(optimizer, step_size=2, gamma=0.8)  # .ReduceLROnPlateau(optimizer, factor=0.7, patience=5, min_lr=0.00005)
