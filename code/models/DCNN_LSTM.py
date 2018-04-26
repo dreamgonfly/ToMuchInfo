@@ -68,10 +68,7 @@ class DCNN_LSTM(nn.Module):
         new_feature_list = []
         for feat in feature_list:
             to_be_padded = max_len - feat.shape[2]
-            if(round(random.random())): # overfitting 방지
-                ze = nn.functional.pad(feat,(0,to_be_padded))
-            else:
-                ze = nn.functional.pad(feat,(to_be_padded,0))
+            ze = nn.functional.pad(feat,(to_be_padded,0))
             new_feature_list.append(ze)
 
         features = torch.cat(new_feature_list, dim=1)
