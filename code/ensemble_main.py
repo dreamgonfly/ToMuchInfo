@@ -252,7 +252,7 @@ if config.mode == 'train':
             model.embedding.weight = nn.Parameter(embedding_weights, requires_grad=True)
 
         if config.loss_weights:
-            weights = [9, 67, 66, 55, 35, 26, 19, 13, 11, 2]
+            weights = [0.031, 0.222, 0.219, 0.184, 0.114, 0.085, 0.061, 0.041, 0.036, 0.006]
             weights = torch.FloatTensor(weights)
             if config.use_gpu:
                 weights = weights.cuda()
