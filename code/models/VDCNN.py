@@ -128,6 +128,7 @@ class VDCNN(nn.Module):
             nn.ReLU(),
             nn.BatchNorm1d(2048),
             nn.Linear(2048, 1),
+            nn.Dropout(0.2, inplace=True)
         )
 
     def forward(self, sentences, features):
