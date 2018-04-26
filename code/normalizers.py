@@ -122,7 +122,7 @@ def common_errors(raw_text):
         tokens = r.findall(raw_text)
         for token in tokens:
             raw_text = raw_text.replace(token, bad_word)
-
+ㄱ
     return raw_text
 
 def common_mispel(raw_text):
@@ -138,7 +138,7 @@ def common_mispel(raw_text):
                  '뒤지는': {'디지는','듸지는'},
                  '없음': {'업슴','업음','없슴','업씀','없씀'},
                  '있음': {'잇슴','잇음','있슴','이씀','있씀','있슴'},
-                 '굿': {'굳','구웃','구욷','구우웃','긋~','긋!'}, # 여기서도 구우우우우웃 어케잡지
+                 '굿': {'굳','구웃','구욷','구[우]+웃','긋~','긋!'}, # 여기서도 구우우우우웃 어케잡지
                  '있다': {'이따','있따',},
                  '되게': {'디게'},
                  }
@@ -170,7 +170,7 @@ def common_abbr(raw_text):
 def common_eng(raw_text):
     bad_words = {'요': {'yo'},
                 '굿바이':{'good bye','goodbye'},
-                 '굿': {'good'}, # gooooooooooooooood 어케잡음
+                 '굿': {'go[o]+d',}, # gooooooooooooooood 어케잡음
                  '디비디':{'dvd'},
                  '판타스틱':{'fantastic'},
                  '오에스티':{'ost'},
