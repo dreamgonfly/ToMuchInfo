@@ -520,6 +520,7 @@ class EnsembleTrainer_xgb():
             self.xgb.fit(X_train, y_train)
             print("Ensemble loss : {}".format(self.xgb.score(X_val, y_val)))
 
+
             # if epoch % self.print_every == 0:
             #     current_lr = self.optimizer.param_groups[0]['lr']
             #     message = self.base_message.format(epoch=epoch, progress=epoch / epochs, train_loss=epoch_loss,
