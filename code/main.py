@@ -60,6 +60,7 @@ args.add_argument('--requires_grad', type=bool, default=EMBEDDING_REQUIRES_GRAD)
 args.add_argument('--down_sampling', type=bool, default=False)
 args.add_argument('--min_lr', type=float, default=0)
 args.add_argument('--loss_weights', default=False, type=bool, help='loss_weights')
+args.add_argument('--small', default=False, type=bool)
 config = args.parse_args()
 
 logger = utils.get_logger('MovieReview')
@@ -157,7 +158,7 @@ if config.pause:
 if config.mode == 'train':
     # 데이터를 로드합니다.
     logger.info("Loading data...")
-    train_data, val_data = load_data(DATASET_PATH, val_size=0.03)
+    train_data, val_data = load_data(DATASET_PATH, val_size=0.03, small=config.small)
 
     logger.info("Building preprocessor...")
     preprocessor.tokenizer.fit(train_data)

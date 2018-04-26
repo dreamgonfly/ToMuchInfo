@@ -13,7 +13,7 @@ random.seed(0)
 PAD_IDX = 0
 
 
-def load_data(dataset_path, val_size=0.3):
+def load_data(dataset_path, val_size=0.3, small=False):
 
     data_review = os.path.join(dataset_path, 'train', 'train_data')
     data_label = os.path.join(dataset_path, 'train', 'train_label')
@@ -23,7 +23,10 @@ def load_data(dataset_path, val_size=0.3):
     
     with open(data_label) as f:
         labels = [int(x) for x in f.readlines()]
-    
+
+    if small:
+        reviews = reviews[:1000]
+        labels = labels[:1000]
     data = [(review, label) for review, label in zip(reviews, labels)]
     train_data, val_data = train_test_split(data, test_size=val_size)
     
