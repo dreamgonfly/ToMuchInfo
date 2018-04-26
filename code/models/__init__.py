@@ -10,6 +10,7 @@ from .FastText import FastText
 from .TextCNN import TextCNN
 from .RCNN import RCNN
 from .DCNN_LSTM import DCNN_LSTM
+from .TDSM import TDSM
 
 __all__ = ['WordCNN',
            'WordCNN_word',
@@ -23,4 +24,5 @@ __all__ = ['WordCNN',
            'TextCNN',
            'RCNN',
            'DCNN_LSTM',
+           'TDSM'
            ]

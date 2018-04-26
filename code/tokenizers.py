@@ -306,6 +306,37 @@ class JamoUnpopularMaskedTokenizer:
         self.popular_ids = state_dict['popular_ids']
 
 
+class TDSMTokenizer:
+    """A tokenizer for TDSM"""
+
+    def __init__(self, config):
+        self.WORD_LEGNTH = 20
+        self.mv = re.compile(r'mv[0-9]{2,10}')
+        self.ac = re.compile(r'ac[0-9]{2,10}')
+
+    def fit(self, data):
+        pass
+
+    def state_dict(self):
+        return None
+
+    def load_state_dict(self, state_dict):
+        pass
+
+    def tokenize(self, raw_text):
+
+        jamo_text = j2hcj(h2j(raw_text))
+        mv_replaced = self.mv.sub('🐶', jamo_text)
+        ac_replaced = self.ac.sub('🐱', mv_replaced)
+
+        words = ac_replaced.split()
+        new_words = []
+        for word in words:
+            new_word = word[:self.WORD_LEGNTH] + '💔' * max(self.WORD_LEGNTH - len(word), 0)
+            new_words.append(new_word)
+
+        return ''.join(new_words)
+
 if __name__ == '__main__':
 
     tokenizer = SoyNLPTokenizer()
