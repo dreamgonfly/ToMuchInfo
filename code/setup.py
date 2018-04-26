@@ -1,4 +1,4 @@
-#nsml: skdy33/tmi:latest
+#nsml: skdy33/tmi_r:latest
 
 """
 Copyright 2018 NAVER Corp.
