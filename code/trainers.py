@@ -512,7 +512,7 @@ class EnsembleTrainer_xgb():
                     model_prediction = self.train_predictions[model_name]
                     if not predictions:
                         predictions = np.array(model_prediction)
-                        labels = self.train_labels[model_name]
+                        labels = self.train_labels[model_name].data.tolist()
                     else:
                         predictions = np.concatenate((predictions, np.array(model_prediction)))
                 X_train, X_val, y_train, y_val = train_test_split(predictions, labels)
