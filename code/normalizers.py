@@ -64,7 +64,8 @@ class AdvancedNormalizer:
         normalized_text = common_mispel(normalized_text)
         normalized_text = common_abbr(normalized_text)
         normalized_text = common_eng(normalized_text)
-        normalized_text = common_propnoun(normalized_text)
+        normalized_text = emoticon_normalize(normalized_text,3)
+        normalized_text = repeat_normalize(normalized_text,3)
 
         return normalized_text
 
@@ -122,7 +123,7 @@ def common_errors(raw_text):
         tokens = r.findall(raw_text)
         for token in tokens:
             raw_text = raw_text.replace(token, bad_word)
-ㄱ
+
     return raw_text
 
 def common_mispel(raw_text):
@@ -208,3 +209,43 @@ def common_propnoun(raw_text):
             raw_text = raw_text.replace(token, bad_word)
 
     return raw_text
+
+doublespace_pattern = re.compile(u'\s+', re.UNICODE)
+repeatchars_pattern = re.compile(u'(.+?)\1+', re.UNICODE)
+
+def repeat_normalize(sent, n_repeats=2):
+    if n_repeats > 0:
+        sent = re.sub(r'(.+?)\1+', r'\1'* n_repeats, sent)
+    sent = doublespace_pattern.sub(' ', sent)
+    return sent.strip()
+
+def emoticon_normalize(sent, n_repeats=2):
+    if not sent:
+        return sent
+
+    # Pattern matching ㅋ쿠ㅜ
+    def pattern(idx):
+        # Jaum: 0, Moum: 1, Complete: 2, else -1
+        if 12593 <= idx <= 12622:
+            return 0
+        elif 12623 <= idx <= 12643:
+            return 1
+        elif 44032 <= idx <= 55203:
+            return 2
+        else:
+            return -1
+
+    idxs = [pattern(ord(c)) for c in sent]
+    sent_ = []
+    for i, (idx, c) in enumerate(zip(idxs[:-1], sent)):
+        if i > 0 and (idxs[i-1] == 0 and idx == 2 and idxs[i+1] == 1):
+            cho, jung, jong = decompose(sent[i])
+            if (cho == sent[i-1]) and (jung == sent[i+1]) and (jong == ' '):
+                sent_.append(cho)
+                sent_.append(jung)
+            else:
+                sent_.append(c)
+        else:
+            sent_.append(c)
+    sent_.append(sent[-1])
+    return repeat_normalize(''.join(sent_), n_repeats)
