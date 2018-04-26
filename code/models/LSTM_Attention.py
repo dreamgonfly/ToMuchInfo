@@ -22,7 +22,7 @@ class LSTM_Attention(nn.Module):
         D = config.embedding_size  # config.embedding_size
         H = 200  # hidden_size
         H_f = 1000
-        O = 1
+        O = 10
         da = 300
         self.r = 10
         num_layers = 3

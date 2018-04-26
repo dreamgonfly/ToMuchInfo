@@ -127,7 +127,7 @@ class VDCNN_29(nn.Module):
             nn.Linear(2048, 2048),
             nn.ReLU(),
             nn.BatchNorm1d(2048),
-            nn.Linear(2048, 1),
+            nn.Linear(2048, 10),
         )
 
     def forward(self, sentences, features):

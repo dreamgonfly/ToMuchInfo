@@ -22,7 +22,7 @@ def load_data(dataset_path, val_size=0.3):
         reviews = f.readlines()
     
     with open(data_label) as f:
-        labels = [float(x) for x in f.readlines()]
+        labels = [int(x) for x in f.readlines()]
     
     data = [(review, label) for review, label in zip(reviews, labels)]
     train_data, val_data = train_test_split(data, test_size=val_size)
@@ -117,7 +117,7 @@ class MovieReviewDataset(Dataset):
         PAD_IDX = preprocessor.dictionary.indexer(preprocessor.dictionary.PAD_TOKEN)
 
         data_deleted = [(review, label) for review, label in data if irony_deleter(review, label)]
-        self.data = [(preprocessor.preprocess(review), label) for review, label in data_deleted]
+        self.data = [(preprocessor.preprocess(review), label - 1) for review, label in data_deleted]
 
         if min_length or max_length:
             self.data = [((pad_text(review, PAD_IDX, min_length, max_length), feature), label) for
@@ -155,5 +155,8 @@ def collate_fn(batch):
 
     reviews_tensor = torch.LongTensor(reviews_padded)
     features_tensor = torch.FloatTensor(features)
-    labels_tensor = torch.FloatTensor(labels)
+    # print(labels)
+    labels_tensor = torch.LongTensor(labels) # classification
+    # print(labels_tensor)
+    # labels_tensor = torch.FloatTensor(labels) # for regression
     return reviews_tensor, features_tensor, labels_tensor

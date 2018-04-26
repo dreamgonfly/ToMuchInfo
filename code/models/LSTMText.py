@@ -28,7 +28,7 @@ class LSTMText(nn.Module):
             nn.Linear(320,128),
             nn.BatchNorm1d(128),
             nn.ReLU(inplace=True),
-            nn.Linear(128,1)
+            nn.Linear(128,10)
         )
 
     def forward(self, reviews, features):

@@ -130,7 +130,7 @@ class VDCNN_feat(nn.Module):
 
         self.linear_layers = nn.Sequential(*linear_layers)
 
-        self.final_layer = nn.Linear(128 + n_features, 1)
+        self.final_layer = nn.Linear(128 + n_features, 10)
         self.final_bn = nn.BatchNorm1d(num_features=128 + n_features)
 
     def forward(self, sentences, features):

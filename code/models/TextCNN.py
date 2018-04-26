@@ -8,7 +8,7 @@ class TextCNN(nn.Module):
 
         V = config.vocabulary_size
         D = config.embedding_size
-        C = 1
+        C = 10
         Ci = 1
         Co = 4
         Ks = [1,2,3,4]

@@ -24,7 +24,7 @@ class WordCNN_feat(nn.Module):
             nn.Linear(128 + n_features, 64),
             nn.Linear(64, 32),
             nn.Linear(32, 16),
-            nn.Linear(16, 1),
+            nn.Linear(16, 10),
 
         )
 

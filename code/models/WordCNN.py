@@ -19,7 +19,7 @@ class WordCNN(nn.Module):
         self.tanh = nn.Tanh()
         self.relu = nn.ReLU(inplace=True)
         self.dropout = nn.Dropout()
-        self.linear = nn.Linear(in_features=300, out_features=1)
+        self.linear = nn.Linear(in_features=300, out_features=10)
 
     def forward(self, reviews, features):
 

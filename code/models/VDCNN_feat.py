@@ -143,7 +143,7 @@ class VDCNN_feat(nn.Module):
             nn.Linear(128 + 16, 64),
             nn.ReLU(),
             nn.BatchNorm1d(64),
-            nn.Linear(64, 1),
+            nn.Linear(64, 10),
         )
 
     def forward(self, sentences, features):

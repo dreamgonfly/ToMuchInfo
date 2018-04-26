@@ -23,7 +23,7 @@ class BiLSTM(nn.Module):
         self.B1 = nn.BatchNorm1d(self.hidden_dim * 2)
         self.hidden2label = nn.Linear(self.hidden_dim * 2, self.label_size)
         self.B2 = nn.BatchNorm1d(self.label_size)
-        self.label2score = nn.Linear(self.label_size,1)
+        self.label2score = nn.Linear(self.label_size,10)
         self.hidden = self.init_hidden()
 
     def init_hidden(self):

@@ -7,6 +7,7 @@ import torch
 from torch.autograd import Variable
 from torch import nn, optim
 from torch.utils.data import DataLoader
+from torch.nn.functional import softmax
 
 import models
 import normalizers
@@ -126,8 +127,11 @@ def bind_model(model, config):
         model.eval()
         # 저장한 모델에 입력값을 넣고 prediction 결과를 리턴받습니다
         output_prediction = model(reviews, features)
-        prediction_clipped = torch.clamp(output_prediction, min=1, max=10)
-        point = prediction_clipped.data.tolist()
+        score_tensor = Variable(torch.FloatTensor([1, 2, 3, 4, 5, 6, 7, 8, 9, 10]))
+        prediction = (softmax(output_prediction, dim=1) * score_tensor).sum(dim=1)
+
+        # prediction_clipped = torch.clamp(output_prediction, min=1, max=10) # for regression
+        point = prediction.data.tolist()
         # DONOTCHANGE: They are reserved for nsml
         # 리턴 결과는 [(confidence interval, 포인트)] 의 형태로 보내야만 리더보드에 올릴 수 있습니다. 리더보드 결과에 confidence interval의 값은 영향을 미치지 않습니다
         return list(zip(np.zeros(len(point)), point))
@@ -204,7 +208,7 @@ if config.mode == 'train':
             embedding_weights = embedding_weights.cuda()
         model.embedding.weight = nn.Parameter(embedding_weights, requires_grad=EMBEDDING_REQUIRES_GRAD)
 
-    criterion = nn.MSELoss(size_average=False)
+    criterion = nn.CrossEntropyLoss(size_average=False) # nn.MSELoss(size_average=False)
     trainable_params = [p for p in model.parameters() if p.requires_grad]
     optimizer = optim.Adam(filter(lambda p: p.requires_grad, model.parameters()), lr=config.learning_rate)
     lr_scheduler = optim.lr_scheduler.StepLR(optimizer, step_size=2, gamma=0.8)  # .ReduceLROnPlateau(optimizer, factor=0.7, patience=5, min_lr=0.00005)
