@@ -1,6 +1,8 @@
 import torch
 from torch import nn
 from torch.autograd import Variable
+import random
+
 class SequenceWise(nn.Module):
     """
     총 두 번 사용된다. CNN의 output이 RNN으로 들어갈 때. RNN의 output이 FC로 들어갈 때.
@@ -20,6 +22,7 @@ class DCNN_LSTM(nn.Module):
     def __init__(self, config, n_features):
         super(DCNN_LSTM, self).__init__()
 
+        self.hidden_size = 128
         kernel_sizes = [3,4,5] # config.kernel_sizes
         self.kernel_sizes = kernel_sizes
         vocabulary_size = config.vocabulary_size
@@ -31,19 +34,21 @@ class DCNN_LSTM(nn.Module):
                  kernel_sizes]
         self.conv_modules = nn.ModuleList(convs)
         self.tanh = nn.Tanh()
-        self.relu = nn.ReLU(inplace=True)
+        #self.relu = nn.ReLU(inplace=True)
+        self.sigmoid = nn.Sigmoid()
         self.dropout = nn.Dropout()
-        self.lstm = nn.LSTM(input_size=100*len(kernel_sizes),hidden_size =128,bidirectional=True)
+        self.lstm = nn.LSTM(input_size=100*len(kernel_sizes),hidden_size =self.hidden_size,bidirectional=True)
         self.config = config
         self.B1 = SequenceWise(nn.BatchNorm1d(100*len(self.kernel_sizes)))
-
         self.batch_size = config.batch_size
         self.hidden = self.init_hidden()
 
 
         fully_connected = nn.Sequential(
-            nn.BatchNorm1d(128),
-            nn.Linear(128,1, bias=False)
+            nn.BatchNorm1d(self.hidden_size),
+            nn.Sigmoid(),
+            nn.Dropout(),
+            nn.Linear(self.hidden_size,10, bias=False)
         )
         self.fc = nn.Sequential(
             SequenceWise(fully_connected),
@@ -63,7 +68,10 @@ class DCNN_LSTM(nn.Module):
         new_feature_list = []
         for feat in feature_list:
             to_be_padded = max_len - feat.shape[2]
-            ze = nn.functional.pad(feat,(0,to_be_padded))
+            if(round(random.random())): # overfitting 방지
+                ze = nn.functional.pad(feat,(0,to_be_padded))
+            else:
+                ze = nn.functional.pad(feat,(to_be_padded,0))
             new_feature_list.append(ze)
 
         features = torch.cat(new_feature_list, dim=1)
@@ -73,6 +81,10 @@ class DCNN_LSTM(nn.Module):
 
         #batch_norm
         features = self.B1(features)
+        # ReLUx
+        sigmoid = self.sigmoid(features)
+        # dropout
+        features = self.dropout(features)
 
         # now LSTM
         features ,self.hidden = self.lstm(features,self.hidden)
