@@ -1,4 +1,5 @@
 import re
+from soynlp.hangle import decompose
 
 
 class DummyNormalizer:
@@ -63,7 +64,7 @@ class AdvancedNormalizer:
         normalized_text = common_errors(normalized_text)
         normalized_text = common_mispel(normalized_text)
         normalized_text = common_abbr(normalized_text)
-        normalized_text = common_eng(normalized_text)
+#        normalized_text = common_eng(normalized_text)
         normalized_text = emoticon_normalize(normalized_text,3)
         normalized_text = repeat_normalize(normalized_text,3)
 
@@ -110,7 +111,7 @@ def common_errors(raw_text):
                  '았다': {'앗다'},
                  '의리': {'으리', 'ㅇㄹ'},
                  '재미': {'제미'},
-                 '잼': {'젬'},
+                 '잼': {'젬','잼미'},
                  '밌': {'밋'},
                  '에요': {'예여','에여'},
                  '마이너스': {'마이나스'},
@@ -142,6 +143,10 @@ def common_mispel(raw_text):
                  '굿': {'굳','구웃','구욷','구[우]+웃','긋~','긋!'}, # 여기서도 구우우우우웃 어케잡지
                  '있다': {'이따','있따',},
                  '되게': {'디게'},
+                 '습니': {'읍니'},
+                 '씀': {'뜸'},
+                 '으뜸': {'으씀'},
+                 '주인공': {'쥔공'},
                  }
     for bad_word in bad_words:
         r = re.compile('|'.join(bad_words[bad_word]))
@@ -186,7 +191,7 @@ def common_eng(raw_text):
 
 def common_eng(raw_text):
     bad_words = {'퍼센트': {'%'},
-                '하트':{'♥','♡'},
+                '하트':{'♥','♡','★'},
 
                  }
     for bad_word in bad_words:
