@@ -8,6 +8,8 @@ from collections import defaultdict
 from xgboost import XGBRegressor
 import numpy as np
 from sklearn.model_selection import train_test_split
+from torch.nn.functional import softmax
+from torch import nn
 
 import nsml
 
@@ -21,6 +23,7 @@ class Trainer():
         self.train_dataloader = train_dataloader
         self.val_dataloader = val_dataloader
         self.criterion = criterion
+        self.val_criterion = nn.MSELoss(size_average=False)
         self.optimizer = optimizer
         self.lr_schedule = lr_schedule
         self.lr_scheduler = lr_scheduler
@@ -92,12 +95,16 @@ class Trainer():
                 self.model.batch_size = len(val_inputs)
                 self.model.hidden = self.model.init_hidden()
             self.val_outputs = self.model(self.val_inputs, self.val_features)
-            self.val_outputs = torch.clamp(self.val_outputs, min=1, max=10)
             if type(self.val_outputs) == tuple:
-                val_batch_loss = self.criterion(self.val_outputs[0], self.val_targets) + self.val_outputs[1]
-            else:
-                val_batch_loss = self.criterion(self.val_outputs, self.val_targets)
-#             val_batch_metric = self.accuracy(self.val_outputs, self.val_targets)
+                self.val_outputs = self.val_outputs[0]
+
+            score_tensor = Variable(torch.FloatTensor([1, 2, 3, 4, 5, 6, 7, 8, 9, 10]))
+            if self.use_gpu:
+                score_tensor = score_tensor.cuda()
+            prediction = (softmax(self.val_outputs, dim=1) * score_tensor).sum(dim=1)
+            prediction = torch.clamp(prediction, min=1, max=10)
+            val_batch_loss = self.val_criterion(prediction, self.val_targets.float())
+
             self.val_batch_losses.append(val_batch_loss.data)
 #             self.val_batch_metrics.append(val_batch_metric.data)
 
@@ -195,6 +202,7 @@ class EnsembleTrainer():
                              "Learning rate: {learning_rate:<.4} ")
 
         self.start_time = datetime.now()
+        self.val_criterion = nn.MSELoss(size_average=False)
 
     def train(self, model, criterion, optimizer, train_dataloader, val_dataloader, ):
         model.train()
@@ -241,12 +249,16 @@ class EnsembleTrainer():
                 model.batch_size = len(val_inputs)
                 model.hidden = model.init_hidden()
             val_outputs = model(val_inputs, val_features)
-            val_outputs = torch.clamp(val_outputs, min=1, max=10)
             if type(val_outputs) == tuple:
-                val_batch_loss = criterion(val_outputs[0], val_targets) + val_outputs[1]
-            else:
-                val_batch_loss = criterion(val_outputs, val_targets)
-#             val_batch_metric = self.accuracy(self.val_outputs, self.val_targets)
+                val_outputs = val_outputs[0]
+
+            score_tensor = Variable(torch.FloatTensor([1, 2, 3, 4, 5, 6, 7, 8, 9, 10]))
+            if self.use_gpu:
+                score_tensor = score_tensor.cuda()
+            prediction = (softmax(val_outputs, dim=1) * score_tensor).sum(dim=1)
+            prediction = torch.clamp(prediction, min=1, max=10)
+            val_batch_loss = self.val_criterion(prediction, val_targets.float())
+
             val_batch_losses.append(val_batch_loss.data)
 #             self.val_batch_metrics.append(val_batch_metric.data)
 
@@ -388,6 +400,7 @@ class EnsembleTrainer_xgb():
         self.train_predictions = defaultdict(list)
         self.train_labels = defaultdict(list)
         self.xgb = xgb
+        self.val_criterion = nn.MSELoss(size_average=False)
 
     def train(self, model, criterion, optimizer, train_dataloader, val_dataloader, config_name, is_best_epoch=False):
         model.train()
@@ -440,12 +453,16 @@ class EnsembleTrainer_xgb():
                 model.batch_size = len(val_inputs)
                 model.hidden = model.init_hidden()
             val_outputs = model(val_inputs, val_features)
-            val_outputs = torch.clamp(val_outputs, min=1, max=10)
             if type(val_outputs) == tuple:
-                val_batch_loss = criterion(val_outputs[0], val_targets) + val_outputs[1]
-            else:
-                val_batch_loss = criterion(val_outputs, val_targets)
-#             val_batch_metric = self.accuracy(self.val_outputs, self.val_targets)
+                val_outputs = val_outputs[0]
+
+            score_tensor = Variable(torch.FloatTensor([1, 2, 3, 4, 5, 6, 7, 8, 9, 10]))
+            if self.use_gpu:
+                score_tensor = score_tensor.cuda()
+            prediction = (softmax(val_outputs, dim=1) * score_tensor).sum(dim=1)
+            prediction = torch.clamp(prediction, min=1, max=10)
+            val_batch_loss = self.val_criterion(prediction, val_targets.float())
+
             val_batch_losses.append(val_batch_loss.data)
 #             self.val_batch_metrics.append(val_batch_metric.data)
 
