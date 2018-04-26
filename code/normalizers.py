@@ -122,7 +122,7 @@ def common_errors(raw_text):
         tokens = r.findall(raw_text)
         for token in tokens:
             raw_text = raw_text.replace(token, bad_word)
-ㄱ
+
     return raw_text
 
 def common_mispel(raw_text):

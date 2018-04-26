@@ -65,8 +65,10 @@ logger = utils.get_logger('Ensemble')
 
 ensemble_models = defaultdict(dict)
 
+
 class BaseConfig:
     pass
+
 
 # Set defaults
 for config_name in MODELS_CONFIG:
