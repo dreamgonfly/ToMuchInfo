@@ -10,7 +10,7 @@ class TDSM(nn.Module):
 
         self.WORD_LENGTH = 20
 
-        self.embedding = nn.Embedding(config.vocabulary_size, 100, padding_idx=0)
+        self.embedding = nn.Embedding(config.vocabulary_size, config.embedding_size, padding_idx=0)
 
         self.char_conv = nn.Sequential(nn.Conv1d(100, 10, kernel_size=4), nn.Dropout(), nn.ReLU(),
             nn.Conv1d(10, 20, kernel_size=4), nn.Dropout(), nn.ReLU(), nn.Conv1d(20, 30, kernel_size=4, stride=2),

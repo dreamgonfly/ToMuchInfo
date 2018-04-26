@@ -87,7 +87,10 @@ preprocessor = Preprocessor(config, normalizer, tokenizer, feature_extractor_lis
 print("Number of features:", preprocessor.n_features)
 
 model = Model(config, n_features=preprocessor.n_features)
-
+if torch.cuda.device_count() > 1:
+    print("Let's use", torch.cuda.device_count(), "GPUs!")
+    # dim = 0 [30, xxx] -> [10, ...], [10, ...], [10, ...] on 3 GPUs
+    model = nn.DataParallel(model)
 if config.use_gpu:
     model = model.cuda()
 
