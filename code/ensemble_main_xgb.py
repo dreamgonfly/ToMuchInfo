@@ -131,13 +131,14 @@ def bind_model(model, config):
             'best_losses': {config_name: ensemble_models[config_name]['best_loss'] for config_name in ensemble_models},
             'train_predictions': {config_name: ensemble_models[config_name]['train_predictions'] for config_name in ensemble_models},
             'train_labels': {config_name: ensemble_models[config_name]['train_labels'] for config_name in ensemble_models},
-            'xgb' : xgb,
+            'xgb': xgb,
             }
         torch.save(checkpoint, filename)
 
     # 저장한 모델을 불러올 수 있는 함수입니다.
     def load(filename, *args):
         checkpoint = torch.load(filename)
+        xgb = checkpoint['xgb']
         for config_name in ensemble_models:
             model = ensemble_models[config_name]['model']
             preprocessor = ensemble_models[config_name]['preprocessor']
@@ -157,14 +158,10 @@ def bind_model(model, config):
         :return:
         """
         # dataset.py에서 작성한 preprocess 함수를 호출하여, 문자열을 벡터로 변환합니다
+        infer_predictions = None
 
-        X_train = pd.DataFrame()
-        y_train = None
-        X_test = list()
-        for config_name in ensemble_models:
-            # INFER_THRESHOLD보다 높은 loss를 가진 모델은 제외
-            if ensemble_models[config_name]['best_loss'] > INFER_THRESHOLD:
-                continue
+        for i, config_name in enumerate(sorted(ensemble_models.keys())):
+
             preprocessor = ensemble_models[config_name]['preprocessor']
             model = ensemble_models[config_name]['model']
             reviews, features = preprocessor.preprocess_all(raw_data)
@@ -177,22 +174,20 @@ def bind_model(model, config):
             if hasattr(model, 'init_hidden'):
                 model.batch_size = len(reviews)
                 model.hidden = model.init_hidden()
+
             # 저장한 모델에 입력값을 넣고 prediction 결과를 리턴받습니다
             output_prediction = model(reviews, features)
-            score_tensor = Variable(torch.FloatTensor([1, 2, 3, 4, 5, 6, 7, 8, 9, 10]))
-            if default_config.use_gpu:
-                score_tensor = score_tensor.cuda()
+            if i==0:
+                infer_predictions = output_prediction.data.cpu().numpy()
+            else:
+                infer_predictions = np.concatenate((infer_predictions, output_prediction.data.cpu().numpy()), axis=1)
+            # score_tensor = Variable(torch.FloatTensor([1, 2, 3, 4, 5, 6, 7, 8, 9, 10]))
+            # if default_config.use_gpu:
+            #     score_tensor = score_tensor.cuda()
 
-            prediction = (softmax(output_prediction, dim=1) * score_tensor).sum(dim=1)
+            # prediction = (softmax(output_prediction, dim=1) * score_tensor).sum(dim=1)
+        ensemble_predictions = torch.FloatTensor(xgb.predict(infer_predictions))
 
-            ensemble_models[config_name]['prediction'] = prediction
-            X_train[config_name] = ensemble_models[config_name]['train_predictions']
-            X_test.append(output_prediction)
-            y_train = ensemble_models[config_name]['train_labels']
-
-        xgb = XGBRegressor()
-        xgb.fit(X_train, y_train)
-        ensemble_predictions = xgb.predict(X_test).values
         prediction_clipped = torch.clamp(ensemble_predictions, min=1, max=10)
 
         point = prediction_clipped.data.tolist()

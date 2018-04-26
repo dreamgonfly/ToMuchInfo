@@ -515,7 +515,7 @@ class EnsembleTrainer_xgb():
                     labels = self.train_labels[model_name]
                 else:
                     predictions = np.concatenate((predictions, np.array(model_prediction)), axis=1)
-            X_train, X_val, y_train, y_val = train_test_split(predictions, labels)
+            X_train, X_val, y_train, y_val = train_test_split(predictions, labels, test_size=0.01)
             print("Ensemble Training Start!")
             self.xgb.fit(X_train, y_train)
             print("Ensemble loss : {}".format(self.xgb.score(X_val, y_val)))
