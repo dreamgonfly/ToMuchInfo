@@ -109,13 +109,13 @@ class FasttextDictionary:
         for word in self.vocab_words:
 
             if word in data.keys():
-                vector = data[word]
+                vector = np.array(list(data[word]))
                 in_vocab_count += 1
             else:
                 vector = np.random.normal(scale=0.2, size=self.embedding_size)  # random vector
                 out_vocab_count += 1
 
-            if not vector.size == selgf.embedding_size:
+            if not vector.size == self.embedding_size:
                 vector = np.random.normal(scale=0.2, size=self.embedding_size)  # random vector
                 print('word', word, 'NOT 300!!!!!')
             word_vectors.append(vector)
