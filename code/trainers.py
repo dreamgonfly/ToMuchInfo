@@ -6,6 +6,8 @@ import torch
 from torch.autograd import Variable
 from collections import defaultdict
 from xgboost import XGBRegressor
+import numpy as np
+from sklearn.model_selection import train_test_split
 
 import nsml
 
@@ -420,8 +422,8 @@ class EnsembleTrainer_xgb():
 #             print("[ENSEMBLE XGB] targets : Type : {}, Length : {}".format(type(targets), len(targets)))
 
             if is_best_epoch:
-                self.train_predictions[config_name].update(list(outputs.data))
-                self.train_labels[config_name].update(list(targets.data))
+                self.train_predictions[config_name] += outputs.data.tolist()
+                self.train_labels[config_name] += outputs.data.tolist()
 
 
         # validation
@@ -505,11 +507,18 @@ class EnsembleTrainer_xgb():
                 print("[ENSEMBLE XGB] train_predictions : {}".format(len(self.train_predictions[config_name])))
                 print("[ENSEMBLE XGB] train_labels : {}".format(len(self.train_labels[config_name])))
 
-                # predictions = np.array()
-                # for model_name in sorted(self.train_predictions):
-                #
-
-                self.xgb.fit()
+                predictions = None
+                for model_name in sorted(self.train_predictions):
+                    model_prediction = self.train_predictions[model_name]
+                    if not predictions:
+                        predictions = np.array(model_prediction)
+                        labels = self.train_labels[model_name]
+                    else:
+                        predictions = np.concatenate((predictions, np.array(model_prediction)))
+                X_train, X_val, y_train, y_val = train_test_split(predictions, labels)
+                print("Ensemble Training Start!")
+                self.xgb.fit(X_train, y_train)
+                print("Ensemble loss : {}".format(self.xgb.score(X_val, y_val)))
 
             # if epoch % self.print_every == 0:
             #     current_lr = self.optimizer.param_groups[0]['lr']
