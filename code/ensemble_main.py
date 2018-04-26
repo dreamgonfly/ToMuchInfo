@@ -160,12 +160,14 @@ def bind_model(model, config):
                 reviews, features = reviews.cuda(), features.cuda()
 
             model.eval()
-            # 저장한 모델에 입력값을 넣고 prediction 결과를 리턴받습니다
             if hasattr(model, 'init_hidden'):
                 model.batch_size = len(reviews)
                 model.hidden = model.init_hidden()
+            # 저장한 모델에 입력값을 넣고 prediction 결과를 리턴받습니다
             output_prediction = model(reviews, features)
             score_tensor = Variable(torch.FloatTensor([1, 2, 3, 4, 5, 6, 7, 8, 9, 10]))
+            if default_config.use_gpu:
+                score_tensor = score_tensor.cuda()
             prediction = (softmax(output_prediction, dim=1) * score_tensor).sum(dim=1)
 
             ensemble_models[config_name]['prediction'] = prediction

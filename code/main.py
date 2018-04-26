@@ -126,9 +126,14 @@ def bind_model(model, config):
             reviews, features = reviews.cuda(), features.cuda()
 
         model.eval()
+        if hasattr(model, 'init_hidden'):
+            model.batch_size = len(reviews)
+            model.hidden = model.init_hidden()
         # 저장한 모델에 입력값을 넣고 prediction 결과를 리턴받습니다
         output_prediction = model(reviews, features)
         score_tensor = Variable(torch.FloatTensor([1, 2, 3, 4, 5, 6, 7, 8, 9, 10]))
+        if config.use_gpu:
+            score_tensor = score_tensor.cuda()
         prediction = (softmax(output_prediction, dim=1) * score_tensor).sum(dim=1)
 
         # prediction_clipped = torch.clamp(output_prediction, min=1, max=10) # for regression
