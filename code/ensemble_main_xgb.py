@@ -9,6 +9,7 @@ from torch.autograd import Variable
 from torch import nn, optim
 from torch.utils.data import DataLoader
 from xgboost import XGBRegressor
+from torch.nn.functional import softmax
 
 import models
 import normalizers
@@ -170,8 +171,10 @@ def bind_model(model, config):
             model.eval()
             # 저장한 모델에 입력값을 넣고 prediction 결과를 리턴받습니다
             output_prediction = model(reviews, features)
+            score_tensor = Variable(torch.FloatTensor([1, 2, 3, 4, 5, 6, 7, 8, 9, 10]))
+            prediction = (softmax(output_prediction, dim=1) * score_tensor).sum(dim=1)
 
-            ensemble_models[config_name]['prediction'] = output_prediction
+            ensemble_models[config_name]['prediction'] = prediction
             X_train[config_name] = ensemble_models[config_name]['train_predictions']
             X_test.append(output_prediction)
             y_train = ensemble_models[config_name]['train_labels']
@@ -255,7 +258,7 @@ if config.mode == 'train':
                 embedding_weights = embedding_weights.cuda()
             model.embedding.weight = nn.Parameter(embedding_weights, requires_grad=True)
 
-        criterion = nn.MSELoss(size_average=False)
+        criterion = nn.CrossEntropyLoss(size_average=False)
         trainable_params = [p for p in model.parameters() if p.requires_grad]
         optimizer = optim.Adam(params=trainable_params, lr=config.learning_rate)
         lr_scheduler = optim.lr_scheduler.StepLR(optimizer, step_size=2, gamma=0.8)  # .ReduceLROnPlateau(optimizer, factor=0.7, patience=5, min_lr=0.00005)

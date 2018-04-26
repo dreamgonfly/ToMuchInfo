@@ -36,7 +36,7 @@ class WordCNN_word(nn.Module):
             nn.Linear(len(kernel_sizes) * 250, 1000),
             nn.BatchNorm1d(1000),
             nn.ReLU(inplace=True),
-            nn.Linear(1000, 1)
+            nn.Linear(1000, 10)
         )
 
 

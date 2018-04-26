@@ -22,23 +22,25 @@ MODELS_CONFIG = {
         'max_length': 100,
         'embedding_size': 16
     },
-    'VDCNN_29depth': {
+    'VDCNN_newest': {
         'model': 'VDCNN_29',
         'normalizer': 'BasicNormalizer',
-        'tokenizer': 'JamoTokenizer',
+        'tokenizer': 'JamoUnpopularMaskedTokenizer',
         'dictionary': 'RandomDictionary',
-        'vocabulary_size': 100000,
+        'vocabulary_size': 5000,
         'shuffle_dataset': True,
         'lr_schedule': True,
-        'learning_rate': 0.001,
+        'learning_rate': 0.002,
+        # 'min_lr': 0.0001
         'min_length': 64,
         'max_length': 100,
-        'embedding_size': 16
+        'embedding_size': 16,
+        'down_sampling': True
     },
     'DCNN_LSTM_oh_my_god': {
         'model': 'DCNN_LSTM',
         'normalizer': 'BasicNormalizer',
-	    'tokenizer': 'SoyNLPTokenizer',
+        'tokenizer': 'SoyNLPTokenizer',
         'dictionary': 'RandomDictionary',
         'vocabulary_size': 100000,
         'shuffle_dataset': True,
