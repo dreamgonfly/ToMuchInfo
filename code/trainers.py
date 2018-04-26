@@ -5,6 +5,7 @@ from tqdm import tqdm
 import torch
 from torch.autograd import Variable
 from collections import defaultdict
+from xgboost import XGBRegressor
 
 import nsml
 
@@ -358,7 +359,7 @@ class EnsembleTrainer():
 
 
 class EnsembleTrainer_xgb():
-    def __init__(self, ensemble_models, use_gpu=False, print_every=1, save_every=1, logger=None):
+    def __init__(self, ensemble_models, use_gpu=False, print_every=1, save_every=1, logger=None, xgb=None):
 
         self.ensemble_models = ensemble_models
 
@@ -384,6 +385,7 @@ class EnsembleTrainer_xgb():
         self.start_time = datetime.now()
         self.train_predictions = defaultdict(list)
         self.train_labels = defaultdict(list)
+        self.xgb = xgb
 
     def train(self, model, criterion, optimizer, train_dataloader, val_dataloader, config_name, is_best_epoch=False):
         model.train()
@@ -418,8 +420,8 @@ class EnsembleTrainer_xgb():
 #             print("[ENSEMBLE XGB] targets : Type : {}, Length : {}".format(type(targets), len(targets)))
 
             if is_best_epoch:
-                self.train_predictions[config_name] += list(outputs)
-                self.train_labels[config_name] += list(targets)
+                self.train_predictions[config_name].update(list(outputs.data))
+                self.train_labels[config_name].update(list(targets.data))
 
 
         # validation
@@ -502,9 +504,12 @@ class EnsembleTrainer_xgb():
 
                 print("[ENSEMBLE XGB] train_predictions : {}".format(len(self.train_predictions[config_name])))
                 print("[ENSEMBLE XGB] train_labels : {}".format(len(self.train_labels[config_name])))
-                self.ensemble_models[config_name]['train_predictions'] = self.train_predictions[config_name]
-                self.ensemble_models[config_name]['train_labels'] = self.train_labels[config_name]
 
+                # predictions = np.array()
+                # for model_name in sorted(self.train_predictions):
+                #
+
+                self.xgb.fit()
 
             # if epoch % self.print_every == 0:
             #     current_lr = self.optimizer.param_groups[0]['lr']

@@ -115,7 +115,10 @@ for config_name in ensemble_models:
         model = model.cuda()
     ensemble_models[config_name]['model'] = model
     logger.info("Number of features of {config_name} : {n_features}".format(config_name=config_name,
-                                                                      n_features=preprocessor.n_features))
+                                                                            n_features=preprocessor.n_features))
+
+xgb = XGBRegressor()
+
 if not HAS_DATASET and not IS_ON_NSML:  # It is not running on nsml
     DATASET_PATH = 'data/small/' # 'data/movie_review_phase1/'
 
@@ -130,6 +133,7 @@ def bind_model(model, config):
             'best_losses': {config_name: ensemble_models[config_name]['best_loss'] for config_name in ensemble_models},
             'train_predictions': {config_name: ensemble_models[config_name]['train_predictions'] for config_name in ensemble_models},
             'train_labels': {config_name: ensemble_models[config_name]['train_labels'] for config_name in ensemble_models},
+            'xgb' : xgb,
             }
         torch.save(checkpoint, filename)
 
@@ -274,7 +278,7 @@ if config.mode == 'train':
         ensemble_models[config_name]['optimizer'] = optimizer
         ensemble_models[config_name]['lr_scheduler'] = lr_scheduler
 
-    trainer = EnsembleTrainer_xgb(ensemble_models, use_gpu=default_config.use_gpu, logger=logger)
+    trainer = EnsembleTrainer_xgb(ensemble_models, use_gpu=default_config.use_gpu, logger=logger, xgb=xgb)
     trainer.run(epochs=default_config.epochs)
 
 # 로컬 테스트 모드일때 사용합니다
