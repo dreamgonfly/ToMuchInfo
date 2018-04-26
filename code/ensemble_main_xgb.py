@@ -145,9 +145,6 @@ def bind_model(model, config):
 
             model.load_state_dict(checkpoint['model'][config_name])
             preprocessor.load_state_dict(checkpoint['preprocessor'][config_name])
-            ensemble_models[config_name]['best_loss'] = checkpoint['best_losses'][config_name]
-            ensemble_models[config_name]['train_predictions'] = checkpoint['train_predictions'][config_name]
-            ensemble_models[config_name]['train_labels'] = checkpoint['train_labels'][config_name]
 
         print('Checkpoint loaded')
 
