@@ -62,6 +62,7 @@ class FasttextDictionary:
     def __init__(self, tokenizer, config):
         self.tokenizer = tokenizer
         self.vocabulary_size = config.vocabulary_size
+        assert config.embedding_size == 300, "embedding_size must be equal to fasttext vector size (300)"
         self.embedding_size = 300
         self.PAD_TOKEN = '<PAD>'
         self.UNK_TOKEN = '<UNK>'
