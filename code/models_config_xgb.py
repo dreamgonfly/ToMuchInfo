@@ -11,7 +11,7 @@ MODELS_CONFIG = {
         'min_length': 64,
         'max_length': 100,
         'embedding_size': 16,
-        'best_epoch' : 1,
+        'best_epoch': 1,
         # 'best_epoch' : 15
     },
     'VDCNN_2': {
@@ -26,8 +26,8 @@ MODELS_CONFIG = {
         'min_length': 64,
         'max_length': 150,
         'embedding_size': 16,
-        'best_epoch' : 1,
-        # 'best_epoch' : 12
+        'best_epoch': 1,
+        # 'best_epoch': 12
     },
     'DCNN_LSTM_oh_my_god': {
         'model': 'DCNN_LSTM',
@@ -41,8 +41,8 @@ MODELS_CONFIG = {
         'min_length': 10,
         'max_length': 300,
         'embedding_size': 300,
-        'best_epoch' : 1,
-        # 'best_epoch' : 7
+        'best_epoch': 1,
+        # 'best_epoch': 7
     },
 
 }

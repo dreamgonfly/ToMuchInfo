@@ -160,7 +160,8 @@ if config.mode == 'train':
     train_dataset = MovieReviewDataset(train_data, preprocessor, sort=config.sort_dataset, min_length=config.min_length, max_length=config.max_length)
     val_dataset = MovieReviewDataset(val_data, preprocessor, sort=config.sort_dataset, min_length=config.min_length, max_length=config.max_length)
 
-    if config.down_sampling:
+    # if config.down_sampling:
+    if False:
         train_labels = [label for train, label in train_data]
         class_sample_count = np.array([len(np.where(train_labels==t)[0]) for t in range(1,11)])  # dataset has 10 class-1 samples, 1 class-2 samples, etc.
         weights = torch.FloatTensor([1,1,1,1,1,1,1,1,1,1/6]) # 1 / torch.FloatTensor(class_sample_count)
