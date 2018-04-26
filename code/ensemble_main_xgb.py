@@ -60,10 +60,8 @@ args.add_argument('--print_every', type=int, default=1)
 args.add_argument('--save_every', type=int, default=1)
 args.add_argument('--down_sampling', type=bool, default=False)
 args.add_argument('--min_lr', type=float, default=0)
-args.add_argument('--loss_weights', default=[1,1,1,1,1,1,1,1,1,1], metavar='W', type=int, nargs='+', help='loss_weights')
+args.add_argument('--loss_weights', default=False, type=bool, help='loss_weights')
 default_config = args.parse_args()
-assert len(default_config.loss_weights) == 10, "Loss weights must be 10 values"
-
 
 logger = utils.get_logger('Ensemble')
 
@@ -265,11 +263,14 @@ if config.mode == 'train':
                 embedding_weights = embedding_weights.cuda()
             model.embedding.weight = nn.Parameter(embedding_weights, requires_grad=True)
 
-        if config.use_gpu:
-            loss_weights = torch.FloatTensor(config.loss_weights).cuda()
+        if config.loss_weights:
+            weights = [9, 67, 66, 55, 35, 26, 19, 13, 11, 2]
+            weights = torch.FloatTensor(weights)
+            if config.use_gpu:
+                weights = weights.cuda()
         else:
-            loss_weights = torch.FloatTensor(config.loss_weights)
-        criterion = nn.CrossEntropyLoss(size_average=False, weight=loss_weights)
+            weights = None
+        criterion = nn.CrossEntropyLoss(size_average=False, weight=weights)
         trainable_params = [p for p in model.parameters() if p.requires_grad]
         optimizer = optim.Adam(params=trainable_params, lr=config.learning_rate)
         lr_scheduler = optim.lr_scheduler.StepLR(optimizer, step_size=2, gamma=0.8)  # .ReduceLROnPlateau(optimizer, factor=0.7, patience=5, min_lr=0.00005)
