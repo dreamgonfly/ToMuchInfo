@@ -92,7 +92,7 @@ class FasttextDictionary:
         return vocab_words, word2idx, idx2word
 
     def load_vectors(self):
-        fname = 'wordvectors/cc.ko.300.vec'
+        fname = 'wordvectors/wiki.ko.vec' # 'wordvectors/cc.ko.300.vec'
         print("Loading FastText...")
         fin = io.open(fname, 'r', encoding='utf-8', newline='\n', errors='ignore')
         print("FastText loaded")
@@ -105,19 +105,23 @@ class FasttextDictionary:
             data[tokens[0]] = map(float, tokens[1:])
 
         word_vectors = []
+        vocab_num = len(self.vocab_words)
         in_vocab_count, out_vocab_count = 0, 0
-        for word in self.vocab_words:
-
-            if word in data.keys():
-                vector = np.array(list(data[word]))
-                in_vocab_count += 1
+        for i in range(self.vocabulary_size):
+            if i < vocab_num:
+                word = self.idx2word[i]
+                if word in ['<UNK>', '<PAD>']:
+                    vector = np.zeros(self.embedding_size)
+                    in_vocab_count += 1
+                elif word in data.keys():
+                    vector = np.array(list(data[word]))
+                    in_vocab_count += 1
+                else:
+                    vector = np.random.normal(scale=0.2, size=self.embedding_size)  # random vector
+                    out_vocab_count += 1
             else:
-                vector = np.random.normal(scale=0.2, size=self.embedding_size)  # random vector
-                out_vocab_count += 1
+                vector = np.zeros(self.embedding_size)
 
-            if not vector.size == self.embedding_size:
-                vector = np.random.normal(scale=0.2, size=self.embedding_size)  # random vector
-                print('word', word, 'NOT 300!!!!!')
             word_vectors.append(vector)
         print("Words in embedding:", in_vocab_count, "out of embedding:", out_vocab_count)
         embedding = np.stack(word_vectors)
