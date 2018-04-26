@@ -1,4 +1,4 @@
-#nsml: skdy33/tomuchinfo:latest
+#nsml: floydhub/pytorch:0.3.0-gpu.cuda8cudnn6-py3.17
 
 """
 Copyright 2018 NAVER Corp.
