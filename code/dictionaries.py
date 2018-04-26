@@ -115,6 +115,9 @@ class FasttextDictionary:
                 vector = np.random.normal(scale=0.2, size=self.embedding_size)  # random vector
                 out_vocab_count += 1
 
+            if not vector.size == selgf.embedding_size:
+                vector = np.random.normal(scale=0.2, size=self.embedding_size)  # random vector
+                print('word', word, 'NOT 300!!!!!')
             word_vectors.append(vector)
         print("Words in embedding:", in_vocab_count, "out of embedding:", out_vocab_count)
         embedding = np.stack(word_vectors)
