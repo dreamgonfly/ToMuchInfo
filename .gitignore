@@ -1,5 +1,7 @@
 code/checkpoints/
 code/wordvectors/
+data/
+code/data/
 !code/wordvectors/.gitkeep
 .DS_Store
 */.DS_Store
