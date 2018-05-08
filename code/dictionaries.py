@@ -228,7 +228,7 @@ class FastTextVectorizer:
         self.embedding = np.array(state_dict['embedding'])
 
 
-class Word2VecDictionary:
+class Word2VecVectorizer:
     def __init__(self, tokenizer, config):
 
         self.tokenizer = TwitterTokenizer(config)
